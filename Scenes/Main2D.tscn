@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bv551wilhjobj"]
+
+[node name="Node2D" type="Node2D"]
+metadata/_edit_lock_ = true
+
+[node name="Controller" type="Node2D" parent="."]
