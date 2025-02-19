@@ -1,6 +1,14 @@
-[gd_scene format=3 uid="uid://bv551wilhjobj"]
+[gd_scene load_steps=3 format=3 uid="uid://bv551wilhjobj"]
+
+[ext_resource type="Script" path="res://Scripts/Controller2D.cs" id="1_tpgag"]
+[ext_resource type="Script" path="res://Scripts/camera_controller2D.gd" id="2_uwh61"]
 
 [node name="Node2D" type="Node2D"]
 metadata/_edit_lock_ = true
 
 [node name="Controller" type="Node2D" parent="."]
+script = ExtResource("1_tpgag")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("2_uwh61")
+maxScale = 16.0

@@ -9,15 +9,13 @@ public partial class Controller : Node
 	MeshInstance3D cellPrefab;
 
 	[Export] float cellSize = 0.1f;
-	[Export] int cellsLength = 10;
-	private int cellsCount;
+	[Export] int cellsCount = 100;
 	Cell[,] cells;
 
 	public override void _Ready()
 	{
 		cellPrefab = cellScene.Instantiate<MeshInstance3D>();
 
-		cellsCount = (int)(cellsLength / cellSize);
 		cells = new Cell[cellsCount, cellsCount];
 		CreateCells();
 	}
