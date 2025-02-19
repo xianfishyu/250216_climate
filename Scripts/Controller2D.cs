@@ -6,8 +6,6 @@ using static Godot.GD;
 public partial class Controller2D : Node2D
 {
 
-	float[] temp = new float[200];
-
 	[ExportCategory("HeatSettings")]
 	[ExportGroup("ColorSettings")]
 	[Export] private Color ColdColor = new(0, 0, 1);
@@ -19,10 +17,7 @@ public partial class Controller2D : Node2D
 
 	public override void _Ready()
 	{
-		for (int i = 0; i < temp.Length; i++)
-		{
-			temp[i] = i - 100;
-		}
+		
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -32,10 +27,6 @@ public partial class Controller2D : Node2D
 
 	public override void _Draw()
 	{
-		for (int i = 0; i < temp.Length; i++)
-		{
-			DrawCircle(new Vector2(i * 10, 0), 5, GetHeatColor_H(temp[i]));
-		}
 	}
 
 	private Color GetHeatColor_H(float temperature)
