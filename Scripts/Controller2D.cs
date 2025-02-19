@@ -5,7 +5,7 @@ using static Godot.GD;
 [Tool]
 public partial class Controller2D : Node2D
 {
-	// [Export] float temperature = 0;
+
 	float[] temp = new float[200];
 
 	[ExportCategory("HeatSettings")]
@@ -27,34 +27,41 @@ public partial class Controller2D : Node2D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		// ChangeTemperature();
 		// QueueRedraw();
 	}
 
 	public override void _Draw()
 	{
-		// DrawCircle(new Vector2(0, 0), 10, GetHeatColor(temperature));
 		for (int i = 0; i < temp.Length; i++)
 		{
-			DrawCircle(new Vector2(i * 10, 0), 5, GetHeatColor(temp[i]));
+			DrawCircle(new Vector2(i * 10, 0), 5, GetHeatColor_H(temp[i]));
 		}
 	}
 
-	// private void ChangeTemperature()
-	// {
-	// 	if (temperature > 100)
-	// 		temperature = -100;
-	// 	else
-	// 		temperature += 0.1f;
-	// }
+	private Color GetHeatColor_H(float temperature)
+	{
+		if (temperature < ColdThreshold)
+			return ColdColor;
+		else if (temperature > HotThreshold)
+			return HotColor;
+		else
+		{
+			float range = Mathf.Abs(HotThreshold - ColdThreshold);
+			float t = Mathf.Abs(temperature - ColdThreshold) / range * (240f / 359f);
+			Color color = new(1, 0, 0);
+			color.H = t;
+			Print(t);
+			return color;
+		}
+	}
 
-	private Color GetHeatColor(float temperature)
+	private Color GetHeatColor_S(float temperature)
 	{
 		if (temperature < ColdThreshold)
 			return ColdColor;
 		else if (temperature < ZeroThreshold)
 		{
-			float t = MathF.Abs(temperature - ColdThreshold) / MathF.Abs(ZeroThreshold - ColdThreshold);
+			float t = Mathf.Abs(temperature - ColdThreshold) / Mathf.Abs(ZeroThreshold - ColdThreshold);
 			Color color = ColdColor;
 			color.S = 1 - t;
 			return color;
@@ -63,7 +70,7 @@ public partial class Controller2D : Node2D
 			return Colors.White;
 		else if (temperature < HotThreshold)
 		{
-			float t = MathF.Abs(temperature - HotThreshold) / MathF.Abs(ZeroThreshold - HotThreshold);
+			float t = Mathf.Abs(temperature - HotThreshold) / Mathf.Abs(ZeroThreshold - HotThreshold);
 			Color color = HotColor;
 			color.S = 1 - t;
 			return color;
