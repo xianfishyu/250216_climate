@@ -2,6 +2,7 @@ using Godot;
 using System;
 using static Godot.GD;
 
+
 public partial class Cell : MeshInstance3D
 {
 	StandardMaterial3D material3D;
@@ -9,8 +10,7 @@ public partial class Cell : MeshInstance3D
 	{
 		get
 		{
-			temperature ??= RandRange(-10, 50);
-			// temperature ??= 0;
+			temperature ??= 0;
 			return (float)temperature;
 		}
 		set
