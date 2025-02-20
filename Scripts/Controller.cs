@@ -41,6 +41,12 @@ public partial class Controller : Node
                     if (y > 0) d2Tdy2 += cells[x, y - 1].Temperature;
                     if (y < N - 1) d2Tdy2 += cells[x, y + 1].Temperature;
 
+
+                    if (x == 0) d2Tdx2 += cells[N - 1, y].Temperature;
+                    if (x == N - 1) d2Tdx2 += cells[0, y].Temperature;
+                    if (y == 0) d2Tdy2 += cells[x, N - 1].Temperature;
+                    if (y == N - 1) d2Tdy2 += cells[x, 0].Temperature;
+
                     d2Tdx2 -= 2 * cells[x, y].Temperature;
                     d2Tdy2 -= 2 * cells[x, y].Temperature;
 
