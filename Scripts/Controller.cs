@@ -52,19 +52,34 @@ public partial class Controller : Node
 		}
 
 		// https://i.imgur.com/RIlJM32.png
+		// https://zhuanlan.zhihu.com/p/8616433050
 		double[,] rk4(Cell[,] cells, double dt, int N, double dx, double alpha)
 		{
 			double[,] T = new double[N, N];
+
+			// TODO 处理边界条件，Dirichlet，Neumann
+			// 是不是对完整的体积其实不用处理边界啊懒得写了
 			for (int x = 0; x < N; x++)
 			{
-				for (int y = 0; y < N; y++)
+				T[x, 0] += cells[x, 1].Temperature;
+				T[x, N - 1] = cells[x, N - 2].Temperature;}
+
+			for (int y = 0; y < N; y++)
+			{
+				T[0, y] = cells[1, y].Temperature;
+				T[N - 1, y] = cells[N - 2, y].Temperature;
+			}
+
+
+			// 处理内部
+			for (int x = 1; x < N - 1; x++)
+			{
+				for (int y = 1; y < N - 1; y++)
 				{
 					T[x, y] = cells[x, y].Temperature;
 				}
 			}
-			
-			// TODO 处理边界条件，Dirichlet，Neumann
-			
+
 			// 时间积分：使用 Runge-Kutta 方法
 			// 计算k1234
 			double[,] k1 = ComputeHeatEquation(cells, N, dx, alpha);
@@ -96,7 +111,7 @@ public partial class Controller : Node
 		}
 
 		cells = CellsUpdate;
-		if (Randf() < 0.01)
+		if (Randf() < 0.1)
 			cells[RandRange(0, cellsCount - 1), RandRange(0, cellsCount - 1)].Temperature = RandRange(-10, 255);
 	}
 
