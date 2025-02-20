@@ -6,9 +6,8 @@
 [node name="Node2D" type="Node2D"]
 metadata/_edit_lock_ = true
 
-[node name="Controller" type="Node2D" parent="." node_paths=PackedStringArray("Timer")]
+[node name="Controller" type="Node2D" parent="."]
 script = ExtResource("1_tpgag")
-Timer = NodePath("Timer")
 metadata/_edit_lock_ = true
 
 [node name="Timer" type="Timer" parent="Controller"]

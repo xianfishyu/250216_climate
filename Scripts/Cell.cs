@@ -9,6 +9,7 @@ public partial class Cell : MeshInstance3D
 		get
 		{
 			temperature ??= RandRange(-10, 50);
+			 // temperature ??= 0;
 			return (float)temperature;
 		}
 		set
@@ -34,7 +35,8 @@ public partial class Cell : MeshInstance3D
 
 	private static void SetShaderColor(ShaderMaterial shaderMaterial, float _temperature, string name = "color")
 	{
-		Vector3 color = new(1, _temperature / 255, 0);
+		// Vector3 color = new(1, _temperature / 255, 0);
+		Color color = Color.FromHsv(  240.0f / 360.0f - _temperature / 255, 1.0f, 1.0f);
 		shaderMaterial.SetShaderParameter(name, color);
 	}
 

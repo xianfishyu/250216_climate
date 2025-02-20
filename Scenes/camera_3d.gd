@@ -8,11 +8,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	pass
 
-func _input(event):
+func _input(event: InputEvent) -> void:
 	_update_camera(event)
 
 
-func _unhandled_input(event):
+func _unhandled_input(event: InputEvent) -> void:
 	pass
 
 
@@ -21,7 +21,8 @@ var mouse_move_flag : bool = false
 var mouse_rotate_flag : bool = false
 var mouse_move_sensitivity : float = 0.01
 var mouse_rotation_sensitivity : float = 0.02
-func _update_camera(event):
+var mouse_zoom_sensitivity : float = 0.5
+func _update_camera(event: InputEvent) -> void:
 	# 平移：按住shift和鼠标中键
 	if not mouse_rotate_flag and Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE) and Input.is_key_pressed(KEY_SHIFT):
 		if not mouse_move_flag:
@@ -63,3 +64,9 @@ func _update_camera(event):
 			Input.warp_mouse(mouse_pos)
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			mouse_rotate_flag = false
+			
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			translate(Vector3(0, 0, -mouse_zoom_sensitivity))
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			translate(Vector3(0, 0, mouse_zoom_sensitivity))
