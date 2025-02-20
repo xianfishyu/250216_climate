@@ -33,11 +33,12 @@ public partial class Controller2D : Node2D
 		Cells = CreateCells(Length, Width, CellSize);
 		Timer.Timeout += Calculate;
 		Timer.Timeout += TimeUpdate;
+		Timer.Timeout += QueueRedraw;
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
-		QueueRedraw();
+
 	}
 
 

@@ -1,12 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://cw6hbjt26cam4"]
+[gd_scene load_steps=3 format=3 uid="uid://cw6hbjt26cam4"]
 
 [ext_resource type="Script" path="res://Scripts/Cell.cs" id="1_i5e2x"]
-[ext_resource type="Shader" path="res://Shaders/Cell.gdshader" id="2_4jt3i"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_3lgs5"]
 
 [node name="MeshInstance3D" type="MeshInstance3D"]
 mesh = SubResource("BoxMesh_3lgs5")
 script = ExtResource("1_i5e2x")
-shader = ExtResource("2_4jt3i")
 metadata/_edit_lock_ = true
