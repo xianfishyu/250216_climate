@@ -8,14 +8,19 @@ using static Godot.GD;
 public partial class Controller2D : Node2D
 {
 	private Cell2D[,] Cells;
+
 	private float Time = 0;
 	private float DeltaTime = 0.01f;
 
 	[ExportCategory("CellsSettings")]
 	[Export] private int Length = 200;
 	[Export] private int Width = 100;
-	[Export] private float CellSize = 10;
 	[Export] private float Conductivity = 0.1f;
+
+	[ExportCategory("TextureSettings")]
+	[Export] private TextureRect TextureRect;
+	[Export] private float CellSize = 1f;
+	private Image Image;
 
 	[Export] private Godot.Timer Timer;
 
@@ -30,26 +35,16 @@ public partial class Controller2D : Node2D
 
 	public override void _Ready()
 	{
-		Cells = CreateCells(Length, Width, CellSize);
+		Cells = CreateCells(Length, Width);
+		ChangeColor();
+
 		Timer.Timeout += Calculate;
 		Timer.Timeout += TimeUpdate;
-		Timer.Timeout += QueueRedraw;
+		Timer.Timeout += ChangeColor;
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
-
-	}
-
-
-
-	public override void _Draw()
-	{
-		foreach (var cell in Cells)
-		{
-			Color color = GetHeatColor_S(cell.Temperature);
-			DrawRect(new Rect2(cell.LocalPosition, new Vector2(CellSize, CellSize)), color);
-		}
 	}
 
 	public override void _Input(InputEvent @event)
@@ -58,7 +53,8 @@ public partial class Controller2D : Node2D
 		{
 			if (keyEvent.Keycode == Key.R)
 			{
-				Cells = CreateCells(Length, Width, CellSize);
+				Cells = CreateCells(Length, Width);
+				ChangeColor();
 			}
 		}
 	}
@@ -103,14 +99,14 @@ public partial class Controller2D : Node2D
 			return HotColor;
 	}
 
-	private static Cell2D[,] CreateCells(int length, int width, float size)
+	private static Cell2D[,] CreateCells(int length, int width)
 	{
 		Cell2D[,] cells = new Cell2D[length, width];
 		for (int i = 0; i < length; i++)
 		{
 			for (int j = 0; j < width; j++)
 			{
-				cells[i, j] = new Cell2D(RandRange(-100, 100), new Vector2(i * size, j * size));
+				cells[i, j] = new Cell2D(RandRange(-100, 100), new Vector3(i, j, 0));
 			}
 		}
 		return cells;
@@ -125,14 +121,22 @@ public partial class Controller2D : Node2D
 			{
 				float localT = Cells[i, j].Temperature;
 				float deltaT = 0;
-				if (i + 1 < Length)
-					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+                if (i + 1 < Length)
+                    deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+				else
+					deltaT += (Cells[0, j].Temperature - localT) * Conductivity;
 				if (i - 1 >= 0)
 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
+				else
+					deltaT += (Cells[Length - 1, j].Temperature - localT) * Conductivity;
 				if (j + 1 < Width)
 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
+				else
+					deltaT += (Cells[i, 0].Temperature - localT) * Conductivity;
 				if (j - 1 >= 0)
 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
+				else
+					deltaT += (Cells[i, Width - 1].Temperature - localT) * Conductivity;
 
 				Cells[i, j].Temperature += deltaT;
 			}
@@ -144,16 +148,34 @@ public partial class Controller2D : Node2D
 		Time = (Time + DeltaTime) % 1;
 	}
 
+	private void ChangeColor()
+	{
+		if (Image is null)
+		{
+			TextureRect.Size = new Vector2(Length * CellSize, Width * CellSize);
+			Image = Image.CreateEmpty(Length, Width, false, Image.Format.Rgb8);
+		}
+		for (int i = 0; i < Length; i++)
+		{
+			for (int j = 0; j < Width; j++)
+			{
+				Color color = GetHeatColor_S(Cells[i, j].Temperature);
+				Image.SetPixel(i, j, color);
+			}
+		}
+		TextureRect.Texture = ImageTexture.CreateFromImage(Image);
+	}
 }
+
 
 
 public class Cell2D
 {
 	public float Temperature;
 	// public Vector2 GeoCoordinate;
-	public Vector2 LocalPosition;
+	public Vector3 LocalPosition;
 
-	public Cell2D(float _temperature, Vector2 _position)
+	public Cell2D(float _temperature, Vector3 _position)
 	{
 		Temperature = _temperature;
 		LocalPosition = _position;
