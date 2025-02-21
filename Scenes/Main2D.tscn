@@ -1,14 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://bv551wilhjobj"]
+[gd_scene load_steps=4 format=3 uid="uid://bv551wilhjobj"]
 
 [ext_resource type="Script" path="res://Scripts/Controller2D.cs" id="1_tpgag"]
+[ext_resource type="PackedScene" uid="uid://dc37ysi5bea82" path="res://Nodes/Chunk2D.tscn" id="2_nm3y4"]
 [ext_resource type="Script" path="res://Scripts/camera_controller2D.gd" id="2_uwh61"]
 
 [node name="Node2D" type="Node2D"]
 metadata/_edit_lock_ = true
 
-[node name="Controller" type="Node2D" parent="." node_paths=PackedStringArray("TextureRect", "Timer")]
+[node name="Controller" type="Node2D" parent="." node_paths=PackedStringArray("Timer")]
 script = ExtResource("1_tpgag")
-TextureRect = NodePath("TextureRect")
+ChunkPrefab = ExtResource("2_nm3y4")
 Timer = NodePath("Timer")
 ColdThreshold = -10.0
 HotThreshold = 10.0
@@ -16,15 +17,8 @@ metadata/_edit_lock_ = true
 
 [node name="Timer" type="Timer" parent="Controller"]
 process_callback = 0
-wait_time = 0.1
+wait_time = 0.001
 autostart = true
-
-[node name="TextureRect" type="TextureRect" parent="Controller"]
-texture_filter = 1
-texture_repeat = 1
-offset_right = 1600.0
-offset_bottom = 900.0
-expand_mode = 1
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("2_uwh61")

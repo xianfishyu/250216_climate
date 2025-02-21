@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dc37ysi5bea82"]
+
+[node name="TextureRect" type="TextureRect"]
+texture_filter = 1
+texture_repeat = 1
+offset_right = 1600.0
+offset_bottom = 900.0
+expand_mode = 1

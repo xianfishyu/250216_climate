@@ -22,4 +22,3 @@ autostart = true
 [node name="Controller" type="Node3D" parent="."]
 script = ExtResource("1_locvf")
 cellScene = ExtResource("2_2b4cj")
-cellsCount = 154

@@ -13,12 +13,13 @@ public partial class Controller2D : Node2D
 	private float DeltaTime = 0.01f;
 
 	[ExportCategory("CellsSettings")]
-	[Export] private int Length = 200;
+	[Export] private int Length = 100;
 	[Export] private int Width = 100;
 	[Export] private float Conductivity = 0.1f;
 
 	[ExportCategory("TextureSettings")]
-	[Export] private TextureRect TextureRect;
+	[Export] private PackedScene ChunkPrefab;
+	private TextureRect TextureRect;
 	[Export] private float CellSize = 1f;
 	private Image Image;
 
@@ -35,6 +36,9 @@ public partial class Controller2D : Node2D
 
 	public override void _Ready()
 	{
+		TextureRect = ChunkPrefab.Instantiate<TextureRect>();
+		AddChild(TextureRect);
+
 		Cells = CreateCells(Length, Width);
 		ChangeColor();
 
@@ -121,8 +125,8 @@ public partial class Controller2D : Node2D
 			{
 				float localT = Cells[i, j].Temperature;
 				float deltaT = 0;
-                if (i + 1 < Length)
-                    deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+				if (i + 1 < Length)
+					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
 				else
 					deltaT += (Cells[0, j].Temperature - localT) * Conductivity;
 				if (i - 1 >= 0)
@@ -175,9 +179,63 @@ public class Cell2D
 	// public Vector2 GeoCoordinate;
 	public Vector3 LocalPosition;
 
-	public Cell2D(float _temperature, Vector3 _position)
+	public Cell2D(float _temperature, Vector3 _localPosition)
 	{
 		Temperature = _temperature;
-		LocalPosition = _position;
+		LocalPosition = _localPosition;
 	}
+}
+
+public class Cube
+{
+	public Toward toward;
+	public Cell2D[,] Cells;
+	public int Length;
+	public int Width;
+
+	public Cube(Toward _toward, int length, int width)
+	{
+		toward = _toward;
+		Cells = new Cell2D[length, width];
+		Length = length;
+		Width = width;
+	}
+
+	public void GenerateCells()
+	{
+		for (int i = 0; i < Length; i++)
+		{
+			for (int j = 0; j < Width; j++)
+			{
+				Vector2 pos = new Vector2(i, j);
+				// Vector3 localPos = toward * pos;
+				// Cells[i, j] = new Cell2D(RandRange(-100, 100), ??????????????????);
+			}
+		}
+	}
+}
+
+public struct Toward
+{
+	//好像是这样的，但是对吗？？？
+	//我没吃饱，好崩溃
+	//我要吃香喝辣啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊
+	//操你妈肠胃炎又犯，又想喷射了，我他妈是得诺如了？？？
+	public static readonly Vector3 Up  = Vector3.Up;
+	public static readonly Vector3 UpMask = new(1,0,1);
+
+	public static readonly Vector3 Down = Vector3.Down;
+	public static readonly Vector3 DownMask = new(-1,0,1);
+
+	public static readonly Vector3 Left = Vector3.Left;
+	public static readonly Vector3 LeftMask = new(0,1,1);
+
+	public static readonly Vector3 Right = Vector3.Right;
+	public static readonly Vector3 RightMask = new(0,-1,1);
+
+	public static readonly Vector3 Forward = Vector3.Forward;
+	public static readonly Vector3 ForwardMask = new(-1,1,0);
+
+	public static readonly Vector3 Back = Vector3.Back;
+	public static readonly Vector3 BackMask = new(1,1,0);
 }
