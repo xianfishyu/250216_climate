@@ -9,12 +9,10 @@ public partial class Controller2D : Node2D
 {
 	private Cell2D[,] Cells;
 
-	private float Time = 0;
-	private float DeltaTime = 0.01f;
-
 	[ExportCategory("CellsSettings")]
-	[Export] private int Length = 100;
-	[Export] private int Width = 100;
+	// [Export] private int Length = 100;
+	// [Export] private int Width = 100;
+	[Export] private int CellResolution = 100;
 	[Export] private float Conductivity = 0.1f;
 
 	[ExportCategory("TextureSettings")]
@@ -39,11 +37,10 @@ public partial class Controller2D : Node2D
 		TextureRect = ChunkPrefab.Instantiate<TextureRect>();
 		AddChild(TextureRect);
 
-		Cells = CreateCells(Length, Width);
+		Cells = CreateCells(CellResolution, CellResolution);
 		ChangeColor();
 
 		Timer.Timeout += Calculate;
-		Timer.Timeout += TimeUpdate;
 		Timer.Timeout += ChangeColor;
 	}
 
@@ -57,7 +54,7 @@ public partial class Controller2D : Node2D
 		{
 			if (keyEvent.Keycode == Key.R)
 			{
-				Cells = CreateCells(Length, Width);
+				Cells = CreateCells(CellResolution, CellResolution);
 				ChangeColor();
 			}
 		}
@@ -118,6 +115,8 @@ public partial class Controller2D : Node2D
 
 	private void Calculate()
 	{
+		int Length = Cells.GetLength(0);
+		int Width = Cells.GetLength(1);
 
 		for (int i = 0; i < Length; i++)
 		{
@@ -147,13 +146,11 @@ public partial class Controller2D : Node2D
 		}
 	}
 
-	private void TimeUpdate()
-	{
-		Time = (Time + DeltaTime) % 1;
-	}
-
 	private void ChangeColor()
 	{
+		int Length = Cells.GetLength(0);
+		int Width = Cells.GetLength(1);
+
 		if (Image is null)
 		{
 			TextureRect.Size = new Vector2(Length * CellSize, Width * CellSize);
@@ -169,6 +166,7 @@ public partial class Controller2D : Node2D
 		}
 		TextureRect.Texture = ImageTexture.CreateFromImage(Image);
 	}
+
 }
 
 
@@ -188,28 +186,48 @@ public class Cell2D
 
 public class Cube
 {
-	public Toward toward;
+	public Vector3 toward;
+	public Vector3 towardMask;
 	public Cell2D[,] Cells;
-	public int Length;
-	public int Width;
+	public int CellResolution;
 
-	public Cube(Toward _toward, int length, int width)
+	public Cube(Vector3 _toward, Vector3 _towardMask, int _cellResolution)
 	{
 		toward = _toward;
-		Cells = new Cell2D[length, width];
-		Length = length;
-		Width = width;
+		towardMask = _towardMask;
+		CellResolution = _cellResolution;
+		Cells = new Cell2D[CellResolution, CellResolution];
+		GenerateCells();
 	}
 
 	public void GenerateCells()
 	{
-		for (int i = 0; i < Length; i++)
+		int radius = CellResolution / 2;
+		for (int i = 0; i < CellResolution; i++)
 		{
-			for (int j = 0; j < Width; j++)
+			for (int j = 0; j < CellResolution; j++)
 			{
-				Vector2 pos = new Vector2(i, j);
-				// Vector3 localPos = toward * pos;
-				// Cells[i, j] = new Cell2D(RandRange(-100, 100), ??????????????????);
+				Vector3 innerPos;
+				Vector3 localPos = toward * radius;
+				if (towardMask == Toward.UpMask)
+					innerPos = new Vector3(i - radius, 0, j - radius);
+				else if (towardMask == Toward.DownMask)
+					innerPos = new Vector3(i - radius, 0, j - radius);
+				else if (towardMask == Toward.LeftMask)
+					innerPos = new Vector3(0, i - radius, j - radius);
+				else if (towardMask == Toward.RightMask)
+					innerPos = new Vector3(0, i - radius, j - radius);
+				else if (towardMask == Toward.ForwardMask)
+					innerPos = new Vector3(i - radius, j - radius, 0);
+				else if (towardMask == Toward.BackMask)
+					innerPos = new Vector3(i - radius, j - radius, 0);
+				else
+				{
+					innerPos = Vector3.Zero;
+					Print("CubeGene:wtf你为什么没输入一个合理的遮罩");
+				}
+				localPos += innerPos;
+				Cells[i, j] = new Cell2D(RandRange(-100, 100), localPos);
 			}
 		}
 	}
@@ -217,25 +235,21 @@ public class Cube
 
 public struct Toward
 {
-	//好像是这样的，但是对吗？？？
-	//我没吃饱，好崩溃
-	//我要吃香喝辣啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊
-	//操你妈肠胃炎又犯，又想喷射了，我他妈是得诺如了？？？
-	public static readonly Vector3 Up  = Vector3.Up;
-	public static readonly Vector3 UpMask = new(1,0,1);
+	public static readonly Vector3 Up = Vector3.Up;
+	public static readonly Vector3 UpMask = new(1, 0, 1);
 
 	public static readonly Vector3 Down = Vector3.Down;
-	public static readonly Vector3 DownMask = new(-1,0,1);
+	public static readonly Vector3 DownMask = new(-1, 0, 1);
 
 	public static readonly Vector3 Left = Vector3.Left;
-	public static readonly Vector3 LeftMask = new(0,1,1);
+	public static readonly Vector3 LeftMask = new(0, 1, 1);
 
 	public static readonly Vector3 Right = Vector3.Right;
-	public static readonly Vector3 RightMask = new(0,-1,1);
+	public static readonly Vector3 RightMask = new(0, -1, 1);
 
 	public static readonly Vector3 Forward = Vector3.Forward;
-	public static readonly Vector3 ForwardMask = new(-1,1,0);
+	public static readonly Vector3 ForwardMask = new(-1, 1, 0);
 
 	public static readonly Vector3 Back = Vector3.Back;
-	public static readonly Vector3 BackMask = new(1,1,0);
+	public static readonly Vector3 BackMask = new(1, 1, 0);
 }
