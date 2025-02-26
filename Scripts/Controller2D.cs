@@ -6,12 +6,9 @@ using static Godot.GD;
 // [Tool]
 public partial class Controller2D : Node2D
 {
-	// private Cell2D[,] Cells;
 	private Dictionary<string, Chunk> Chunks = new();
 
 	[ExportCategory("CellsSettings")]
-	// [Export] private int Length = 100;
-	// [Export] private int Width = 100;
 	[Export] private int CellResolution = 100;
 	[Export] private float Conductivity = 0.1f;
 
@@ -35,13 +32,6 @@ public partial class Controller2D : Node2D
 	public override void _Ready()
 	{
 		TextureRect = ChunkPrefab.Instantiate<TextureRect>();
-		// AddChild(TextureRect);
-
-		// Cells = CreateCells(CellResolution, CellResolution);
-		// ChangeColor();
-
-		// Timer.Timeout += Calculate;
-		// Timer.Timeout += ChangeColor;
 
 		ChunkReady();
 		TextureReady();
@@ -106,52 +96,6 @@ public partial class Controller2D : Node2D
 			return HotColor;
 	}
 
-	// private static Cell2D[,] CreateCells(int length, int width)
-	// {
-	// 	Cell2D[,] cells = new Cell2D[length, width];
-	// 	for (int i = 0; i < length; i++)
-	// 	{
-	// 		for (int j = 0; j < width; j++)
-	// 		{
-	// 			cells[i, j] = new Cell2D(RandRange(-100, 100), new Vector3(i, j, 0));
-	// 		}
-	// 	}
-	// 	return cells;
-	// }
-
-	// private void Calculate(Cell[,] Cells)
-	// {
-	// 	int Length = Cells.GetLength(0);
-	// 	int Width = Cells.GetLength(1);
-
-	// 	for (int i = 0; i < Length; i++)
-	// 	{
-	// 		for (int j = 0; j < Width; j++)
-	// 		{
-	// 			float localT = Cells[i, j].Temperature;
-	// 			float deltaT = 0;
-	// 			if (i + 1 < Length)
-	// 				deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-	// 			else
-	// 				deltaT += (Cells[0, j].Temperature - localT) * Conductivity;
-	// 			if (i - 1 >= 0)
-	// 				deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-	// 			else
-	// 				deltaT += (Cells[Length - 1, j].Temperature - localT) * Conductivity;
-	// 			if (j + 1 < Width)
-	// 				deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-	// 			else
-	// 				deltaT += (Cells[i, 0].Temperature - localT) * Conductivity;
-	// 			if (j - 1 >= 0)
-	// 				deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-	// 			else
-	// 				deltaT += (Cells[i, Width - 1].Temperature - localT) * Conductivity;
-
-	// 			Cells[i, j].Temperature += deltaT;
-	// 		}
-	// 	}
-	// }
-
 	private void ChunkReady()
 	{
 		foreach (var chunk in Chunks.Values)
@@ -196,22 +140,6 @@ public partial class Controller2D : Node2D
 		Chunks["Back"].DownNeighbor = Chunks["Down"];
 	}
 
-	private void TextureUpdate()
-	{
-		foreach (var chunk in Chunks.Values)
-		{
-			Image image = Image.CreateEmpty(CellResolution, CellResolution, false, Image.Format.Rgb8);
-			for (int i = 0; i < chunk.Cells.GetLength(0); i++)
-			{
-				for (int j = 0; j < chunk.Cells.GetLength(1); j++)
-				{
-					image.SetPixel(i, j, GetHeatColor_S(chunk.Cells[i, j].Temperature));
-				}
-			}
-			chunk.textureRect.Texture = ImageTexture.CreateFromImage(image);
-		}
-	}
-
 	private void TextureReady()
 	{
 		foreach (var chunk in Chunks.Values)
@@ -246,33 +174,27 @@ public partial class Controller2D : Node2D
 		}
 	}
 
+	private void TextureUpdate()
+	{
+		foreach (var chunk in Chunks.Values)
+		{
+			Image image = Image.CreateEmpty(CellResolution, CellResolution, false, Image.Format.Rgb8);
+			for (int i = 0; i < chunk.Cells.GetLength(0); i++)
+			{
+				for (int j = 0; j < chunk.Cells.GetLength(1); j++)
+				{
+					image.SetPixel(i, j, GetHeatColor_S(chunk.Cells[i, j].Temperature));
+				}
+			}
+			chunk.textureRect.Texture = ImageTexture.CreateFromImage(image);
+		}
+	}
+
 	private void Calculate()
 	{
 		foreach (Chunk chunk in Chunks.Values)
 			chunk.Calculate(Conductivity);
-
 	}
-
-	// private void ChangeColor()
-	// {
-	// 	int Length = Cells.GetLength(0);
-	// 	int Width = Cells.GetLength(1);
-
-	// 	if (Image is null)
-	// 	{
-	// 		TextureRect.Size = new Vector2(Length * CellSize, Width * CellSize);
-	// 		Image = Image.CreateEmpty(Length, Width, false, Image.Format.Rgb8);
-	// 	}
-	// 	for (int i = 0; i < Length; i++)
-	// 	{
-	// 		for (int j = 0; j < Width; j++)
-	// 		{
-	// 			Color color = GetHeatColor_S(Cells[i, j].Temperature);
-	// 			Image.SetPixel(i, j, color);
-	// 		}
-	// 	}
-	// 	TextureRect.Texture = ImageTexture.CreateFromImage(Image);
-	// }
 
 }
 
@@ -283,13 +205,6 @@ public class Cell2D
 	public float Temperature;
 	public Vector2 GeoCoordinate;
 	public Vector3 LocalPosition;
-
-	// public Cell2D(float _temperature, Vector3 _localPosition)
-	// {
-	// 	Temperature = _temperature;
-	// 	LocalPosition = _localPosition;
-	// 	SetGeoCoordinate();
-	// }
 
 	public Cell2D(Vector3 _localPosition)
 	{
@@ -494,7 +409,7 @@ public class Chunk
 					if (j - 1 >= 0)
 						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
 					else
-						deltaT += (UpNeighbor.Cells[CellResolution - 1,(CellResolution - 1) - i].Temperature - localT) * Conductivity;
+						deltaT += (UpNeighbor.Cells[CellResolution - 1, (CellResolution - 1) - i].Temperature - localT) * Conductivity;
 
 					Cells[i, j].Temperature += deltaT;
 				}
@@ -563,7 +478,7 @@ public class Chunk
 			Print("Chunk/Calculate:???你的toward哪去了?");
 		}
 	}
-	
+
 }
 
 public struct Toward
