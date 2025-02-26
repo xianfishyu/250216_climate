@@ -35,7 +35,7 @@ public partial class Controller2D : Node2D
 
 		ChunkReady();
 		TextureReady();
-
+		
 		Timer.Timeout += Calculate;
 		Timer.Timeout += TextureUpdate;
 	}
@@ -138,6 +138,9 @@ public partial class Controller2D : Node2D
 		Chunks["Back"].RightNeighbor = Chunks["Left"];
 		Chunks["Back"].UpNeighbor = Chunks["Up"];
 		Chunks["Back"].DownNeighbor = Chunks["Down"];
+
+		foreach (var chunk in Chunks.Values)
+			chunk.SetNodeList();
 	}
 
 	private void TextureReady()
@@ -206,8 +209,14 @@ public class Cell2D
 	public Vector2 GeoCoordinate;
 	public Vector3 LocalPosition;
 
+	public Cell2D up;
+	public Cell2D down;
+	public Cell2D left;
+	public Cell2D right;
+
 	public Cell2D(Vector3 _localPosition)
 	{
+		
 		LocalPosition = _localPosition;
 		SetGeoCoordinate();
 		SetTemperature();
@@ -221,8 +230,8 @@ public class Cell2D
 
 	public void SetTemperature()
 	{
-		Temperature = 10;
-		// Temperature = RandRange(-100, 100);
+		// Temperature = 10;
+		Temperature = RandRange(-100, 100);
 		// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
 		// Temperature = GeoCoordinate.X * 57.3f;
 		// Temperature = GeoCoordinate.Y * 20f;
@@ -296,7 +305,185 @@ public class Chunk
 		}
 	}
 
+	public void SetNodeList()
+	{
+		if (toward == Toward.Up)
+		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					if (i + 1 < CellResolution)
+						Cells[i, j].right = Cells[i + 1, j];
+					else
+						Cells[i, j].right = RightNeighbor.Cells[(CellResolution - 1) - j, 0];
+					if (i - 1 >= 0)
+						Cells[i, j].left = Cells[i - 1, j];
+					else
+						Cells[i, j].left = LeftNeighbor.Cells[j, 0];
+					if (j + 1 < CellResolution)
+						Cells[i, j].down = Cells[i, j + 1];
+					else
+						Cells[i, j].down = DownNeighbor.Cells[i, 0];
+					if (j - 1 >= 0)
+						Cells[i, j].up = Cells[i, j - 1];
+					else
+						Cells[i, j].up = UpNeighbor.Cells[(CellResolution - 1) - i, 0];
+				}
+			}
+		}
+		else if (toward == Toward.Down)
+		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					if (i + 1 < CellResolution)
+						Cells[i, j].right = Cells[i + 1, j];
+					else
+						Cells[i, j].right = RightNeighbor.Cells[j, CellResolution - 1];
+					if (i - 1 >= 0)
+						Cells[i, j].left = Cells[i - 1, j];
+					else
+						Cells[i, j].left = LeftNeighbor.Cells[(CellResolution - 1) - j, CellResolution - 1];
+					if (j + 1 < CellResolution)
+						Cells[i, j].down = Cells[i, j + 1];
+					else
+						Cells[i, j].down = DownNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1];
+					if (j - 1 >= 0)
+						Cells[i, j].up = Cells[i, j - 1];
+					else
+						Cells[i, j].up = UpNeighbor.Cells[i, CellResolution - 1];
+				}
+			}
+
+		}
+		else if (toward == Toward.Left)
+		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					if (i + 1 < CellResolution)
+						Cells[i, j].right = Cells[i + 1, j];
+					else
+						Cells[i, j].right = RightNeighbor.Cells[0, j];
+					if (i - 1 >= 0)
+						Cells[i, j].left = Cells[i - 1, j];
+					else
+						Cells[i, j].left = LeftNeighbor.Cells[CellResolution - 1, j];
+					if (j + 1 < CellResolution)
+						Cells[i, j].down = Cells[i, j + 1];
+					else
+						Cells[i, j].down = DownNeighbor.Cells[0, (CellResolution - 1) - i];
+					if (j - 1 >= 0)
+						Cells[i, j].up = Cells[i, j - 1];
+					else
+						Cells[i, j].up = UpNeighbor.Cells[0, i];
+				}
+			}
+		}
+		else if (toward == Toward.Right)
+		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					if (i + 1 < CellResolution)
+						Cells[i, j].right = Cells[i + 1, j];
+					else
+						Cells[i, j].right = RightNeighbor.Cells[0, j];
+					if (i - 1 >= 0)
+						Cells[i, j].left = Cells[i - 1, j];
+					else
+						Cells[i, j].left = LeftNeighbor.Cells[CellResolution - 1, j];
+					if (j + 1 < CellResolution)
+						Cells[i, j].down = Cells[i, j + 1];
+					else
+						Cells[i, j].down = DownNeighbor.Cells[CellResolution - 1, i];
+					if (j - 1 >= 0)
+						Cells[i, j].up = Cells[i, j - 1];
+					else
+						Cells[i, j].up = UpNeighbor.Cells[CellResolution - 1, (CellResolution - 1) - i];
+				}
+			}
+		}
+		else if (toward == Toward.Forward)
+		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					if (i + 1 < CellResolution)
+						Cells[i, j].right = Cells[i + 1, j];
+					else
+						Cells[i, j].right = RightNeighbor.Cells[0, j];
+					if (i - 1 >= 0)
+						Cells[i, j].left = Cells[i - 1, j];
+					else
+						Cells[i, j].left = LeftNeighbor.Cells[CellResolution - 1, j];
+					if (j + 1 < CellResolution)
+						Cells[i, j].down = Cells[i, j + 1];
+					else
+						Cells[i, j].down = DownNeighbor.Cells[i, 0];
+					if (j - 1 >= 0)
+						Cells[i, j].up = Cells[i, j - 1];
+					else
+						Cells[i, j].up = UpNeighbor.Cells[i, CellResolution - 1];
+				}
+			}
+		}
+		else if (toward == Toward.Back)
+		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					if (i + 1 < CellResolution)
+						Cells[i, j].right = Cells[i + 1, j];
+					else
+						Cells[i, j].right = RightNeighbor.Cells[0, j];
+					if (i - 1 >= 0)
+						Cells[i, j].left = Cells[i - 1, j];
+					else
+						Cells[i, j].left = LeftNeighbor.Cells[CellResolution - 1, j];
+					if (j + 1 < CellResolution)
+						Cells[i, j].down = Cells[i, j + 1];
+					else
+						Cells[i, j].down = DownNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1];
+					if (j - 1 >= 0)
+						Cells[i, j].up = Cells[i, j - 1];
+					else
+						Cells[i, j].up = UpNeighbor.Cells[(CellResolution - 1) - i, 0];
+				}
+			}
+		}
+		else
+			Print("Chunk/Calculate:???你的toward哪去了?");
+
+	}
+
 	public void Calculate(float Conductivity)
+	{
+		foreach (var cell in Cells)
+		{
+			float leftT = cell.left.Temperature;
+			float rightT = cell.right.Temperature;
+			float upT = cell.up.Temperature;
+			float downT = cell.down.Temperature;
+			float localT = cell.Temperature;
+			float deltaT = 0;
+
+			deltaT += (leftT - localT) * Conductivity;
+			deltaT += (rightT - localT) * Conductivity;
+			deltaT += (upT - localT) * Conductivity;
+			deltaT += (downT - localT) * Conductivity;
+
+			cell.Temperature += deltaT;
+		}
+	}
+
+	public void CalculateOld(float Conductivity)
 	{
 		if (toward == Toward.Up)
 		{
