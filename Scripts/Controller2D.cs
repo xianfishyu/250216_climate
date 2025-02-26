@@ -154,6 +154,8 @@ public partial class Controller2D : Node2D
 
 	private void ChunkReady()
 	{
+		foreach (var chunk in Chunks.Values)
+			chunk.textureRect?.QueueFree();
 		Chunks.Clear();
 		Chunks.Add("Up", new(Toward.Up, CellResolution));
 		Chunks.Add("Down", new(Toward.Down, CellResolution));
@@ -222,6 +224,7 @@ public partial class Controller2D : Node2D
 					image.SetPixel(i, j, GetHeatColor_S(chunk.Cells[i, j].Temperature));
 				}
 			}
+
 			TextureRect rect = TextureRect.Duplicate() as TextureRect;
 			rect.Size = new Vector2(CellResolution * CellSize, CellResolution * CellSize);
 			rect.Texture = ImageTexture.CreateFromImage(image);
@@ -303,6 +306,7 @@ public class Cell2D
 
 	public void SetTemperature()
 	{
+		Temperature = 10;
 		// Temperature = RandRange(-100, 100);
 		// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
 		// Temperature = GeoCoordinate.X * 57.3f;
@@ -335,12 +339,6 @@ public class Chunk
 		CellResolution = _cellResolution;
 		Cells = new Cell2D[CellResolution, CellResolution];
 		GenerateCells();
-	}
-
-	~Chunk()
-	{
-		Print("clean");
-		textureRect.QueueFree();
 	}
 
 	public void SetNeighbor(Chunk _LeftNeighbor, Chunk _RightNeighbor, Chunk _UpNeighbor, Chunk _DownNeighbor)
@@ -379,8 +377,6 @@ public class Chunk
 				}
 				localPos += innerPos;
 				Cells[i, j] = new Cell2D(localPos);
-				Cells[i, j].Temperature = i - j;
-				// Cells[i, j].Temperature = j-i;
 			}
 		}
 	}
@@ -389,19 +385,120 @@ public class Chunk
 	{
 		if (toward == Toward.Up)
 		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					float localT = Cells[i, j].Temperature;
+					float deltaT = 0;
+					if (i + 1 < CellResolution)
+						deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (RightNeighbor.Cells[(CellResolution - 1) - j, 0].Temperature - localT) * Conductivity;
+					if (i - 1 >= 0)
+						deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (LeftNeighbor.Cells[j, 0].Temperature - localT) * Conductivity;
+					if (j + 1 < CellResolution)
+						deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (DownNeighbor.Cells[i, 0].Temperature - localT) * Conductivity;
+					if (j - 1 >= 0)
+						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (UpNeighbor.Cells[(CellResolution - 1) - i, 0].Temperature - localT) * Conductivity;
 
+					Cells[i, j].Temperature += deltaT;
+				}
+			}
 		}
 		else if (toward == Toward.Down)
 		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					float localT = Cells[i, j].Temperature;
+					float deltaT = 0;
+					if (i + 1 < CellResolution)
+						deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (RightNeighbor.Cells[j, CellResolution - 1].Temperature - localT) * Conductivity;
+					if (i - 1 >= 0)
+						deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (LeftNeighbor.Cells[(CellResolution - 1) - j, CellResolution - 1].Temperature - localT) * Conductivity;
+					if (j + 1 < CellResolution)
+						deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (DownNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1].Temperature - localT) * Conductivity;
+					if (j - 1 >= 0)
+						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (UpNeighbor.Cells[i, CellResolution - 1].Temperature - localT) * Conductivity;
+
+					Cells[i, j].Temperature += deltaT;
+				}
+			}
 
 		}
 		else if (toward == Toward.Left)
 		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					float localT = Cells[i, j].Temperature;
+					float deltaT = 0;
+					if (i + 1 < CellResolution)
+						deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (RightNeighbor.Cells[0, j].Temperature - localT) * Conductivity;
+					if (i - 1 >= 0)
+						deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (LeftNeighbor.Cells[CellResolution - 1, j].Temperature - localT) * Conductivity;
+					if (j + 1 < CellResolution)
+						deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (DownNeighbor.Cells[0, (CellResolution - 1) - i].Temperature - localT) * Conductivity;
+					if (j - 1 >= 0)
+						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (UpNeighbor.Cells[0, i].Temperature - localT) * Conductivity;
 
+					Cells[i, j].Temperature += deltaT;
+				}
+			}
 		}
 		else if (toward == Toward.Right)
 		{
+			for (int i = 0; i < CellResolution; i++)
+			{
+				for (int j = 0; j < CellResolution; j++)
+				{
+					float localT = Cells[i, j].Temperature;
+					float deltaT = 0;
+					if (i + 1 < CellResolution)
+						deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (RightNeighbor.Cells[0, j].Temperature - localT) * Conductivity;
+					if (i - 1 >= 0)
+						deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
+					else
+						deltaT += (LeftNeighbor.Cells[CellResolution - 1, j].Temperature - localT) * Conductivity;
+					if (j + 1 < CellResolution)
+						deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (DownNeighbor.Cells[CellResolution - 1, i].Temperature - localT) * Conductivity;
+					if (j - 1 >= 0)
+						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
+					else
+						deltaT += (UpNeighbor.Cells[CellResolution - 1,(CellResolution - 1) - i].Temperature - localT) * Conductivity;
 
+					Cells[i, j].Temperature += deltaT;
+				}
+			}
 		}
 		else if (toward == Toward.Forward)
 		{
@@ -422,11 +519,11 @@ public class Chunk
 					if (j + 1 < CellResolution)
 						deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
 					else
-						deltaT += (UpNeighbor.Cells[i, 0].Temperature - localT) * Conductivity;
+						deltaT += (DownNeighbor.Cells[i, 0].Temperature - localT) * Conductivity;
 					if (j - 1 >= 0)
 						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
 					else
-						deltaT += (DownNeighbor.Cells[i, CellResolution - 1].Temperature - localT) * Conductivity;
+						deltaT += (UpNeighbor.Cells[i, CellResolution - 1].Temperature - localT) * Conductivity;
 
 					Cells[i, j].Temperature += deltaT;
 				}
@@ -451,11 +548,11 @@ public class Chunk
 					if (j + 1 < CellResolution)
 						deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
 					else
-						deltaT += (UpNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1].Temperature - localT) * Conductivity;
+						deltaT += (DownNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1].Temperature - localT) * Conductivity;
 					if (j - 1 >= 0)
 						deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
 					else
-						deltaT += (DownNeighbor.Cells[i, CellResolution - 1].Temperature - localT) * Conductivity;
+						deltaT += (UpNeighbor.Cells[(CellResolution - 1) - i, 0].Temperature - localT) * Conductivity;
 
 					Cells[i, j].Temperature += deltaT;
 				}
@@ -466,6 +563,7 @@ public class Chunk
 			Print("Chunk/Calculate:???你的toward哪去了?");
 		}
 	}
+	
 }
 
 public struct Toward
