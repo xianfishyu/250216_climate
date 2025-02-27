@@ -78,16 +78,9 @@ public class TemperatureCalculator(int width, int height, double alpha)
         }
 
         // 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
-        var tNew = rk4(Cells, delta, Width, Height, dx2, Alpha);
+        Cells = rk4(Cells, delta, Width, Height, dx2, Alpha);
         CellsDerivative = ComputeHeatEquation(Cells, null, 0, Width, Height, dx2, Alpha);
         
-        for (var x = 0; x < Width; x++)
-        {
-            for (var y = 0; y < Height; y++)
-            {
-                Cells[x, y] = (float)tNew[x, y];
-            }
-        }
         
         // 距平值计算
         for (var x = 0; x < Width; x++) 
