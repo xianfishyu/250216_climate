@@ -9,12 +9,14 @@ metadata/_edit_lock_ = true
 
 [node name="Controller" type="Node2D" parent="." node_paths=PackedStringArray("Timer")]
 script = ExtResource("1_tpgag")
+CellResolution = 63
 ChunkPrefab = ExtResource("2_nm3y4")
 Timer = NodePath("Timer")
 metadata/_edit_lock_ = true
 
 [node name="Timer" type="Timer" parent="Controller"]
-wait_time = 0.01
+process_callback = 0
+wait_time = 0.001
 autostart = true
 
 [node name="Camera2D" type="Camera2D" parent="."]
