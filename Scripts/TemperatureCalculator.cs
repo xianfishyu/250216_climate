@@ -41,8 +41,8 @@ public class TemperatureCalculator(int width, int height, double alpha)
                     if (y == 0) d2Tdy2 += cells[x, height - 1] + uk[x, height - 1] * uk_delta;
                     if (y == height - 1) d2Tdy2 += cells[x, 0] + uk[x, 0] * uk_delta;
 
-                    d2Tdx2 -= 2 * (cells[x, y] + uk[x, y] * uk_delta);
-                    d2Tdy2 -= 2 * (cells[x, y] + uk[x, y] * uk_delta);
+                    d2Tdx2 -= 2 * (cells[x, y] + (uk[x, y] * uk_delta));
+                    d2Tdy2 -= 2 * (cells[x, y] + (uk[x, y] * uk_delta));
                     
 
                     dTdt[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
@@ -56,16 +56,7 @@ public class TemperatureCalculator(int width, int height, double alpha)
         // https://zhuanlan.zhihu.com/p/8616433050
         double[,] rk4(double[,] cells, double dt, int width, int height, double dx2, double alpha)
         {
-            var T = new double[width, height];
-
-            // 处理内部
-            for (var x = 0; x < width; x++)
-            {
-                for (var y = 0; y < height; y++)
-                {
-                    T[x, y] = cells[x, y];
-                }
-            }
+            var T = (double[,])cells.Clone();
 
             // 时间积分：使用 Runge-Kutta 方法
             // 计算k1234
