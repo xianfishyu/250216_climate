@@ -239,125 +239,184 @@ public partial class Controller2D : Node2D
 		}
 	}
 
-	// private void CalculateNoooooooooooo()
-	// {
-	// 	foreach (Chunk chunk in Chunks.Values)
-	// 		chunk.Calculate(Conductivity);
-	// }
+
+	public void CalculateNew(List<Cell2D> cellList, int size, float delta)
+	{
+		var dx2 = 1.0 / ((size - 1) * (size - 1));
+
+		List<CellCalculateStruct> cells = [];
+		foreach (var cell in cellList)
+			cells.Add(new CellCalculateStruct(cell));
+
+		// 辅助函数，用于计算温度分布的导数
+		List<CellCalculateStruct> 这个是新的ComputeHeatEquation(List<CellCalculateStruct> _cellList, List<CellCalculateStruct> uk, float uk_delta, int size, float dx2, float alpha)
+		{
+			int listLength = _cellList.Count;
+
+			uk ??= [.. new CellCalculateStruct[listLength]];
+			List<CellCalculateStruct> dTdt_output = [.. new CellCalculateStruct[listLength]];
+
+			for (int i = 0; i < listLength; i++)
+			{
+				float d2Tdx2 = 0;
+				float d2Tdy2 = 0;
+
+				d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
+				d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
+				d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
+				d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
+
+				d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
+				d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
+
+				dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
+			}
+
+			return dTdt_output;
+		}
+
+		double[,] ComputeHeatEquation(double[,] cells_input, double[,] uk, double uk_delta, int size, double dx2, double alpha)
+		{
+			uk ??= new double[size, size];
+			double[,] dTdt_output = new double[size, size];
+			for (int x = 0; x < size; x++)
+			{
+				for (int y = 0; y < size; y++)
+				{
+					double d2Tdx2 = 0;
+					double d2Tdy2 = 0;
 
 
-
-	// public void CalculateNew(double delta)
-	// {
-	// 	int Width = CellResolution;
-	// 	int Height = CellResolution;
-
-
-	// 	double dx2 = 1.0 / ((Width - 1) * (Height - 1));
-
-	// 	// 辅助函数，用于计算温度分布的导数
-	// 	double[,] ComputeHeatEquation(double[,] cells, int width, int height, double dx2, double alpha)
-	// 	{
-	// 		double[,] dTdt = new double[width, height];
-	// 		for (int x = 0; x < width; x++)
-	// 		{
-	// 			for (int y = 0; y < height; y++)
-	// 			{
-	// 				double d2Tdx2 = 0;
-	// 				double d2Tdy2 = 0;
-
-	// 				if (x > 0) d2Tdx2 += cells[x - 1, y];
-	// 				if (x < width - 1) d2Tdx2 += cells[x + 1, y];
-	// 				if (y > 0) d2Tdy2 += cells[x, y - 1];
-	// 				if (y < height - 1) d2Tdy2 += cells[x, y + 1];
+					if (x > 0) d2Tdx2 += cells_input[x - 1, y] + uk[x - 1, y] * uk_delta;
+					if (x < size - 1) d2Tdx2 += cells_input[x + 1, y] + uk[x + 1, y] * uk_delta;
+					if (y > 0) d2Tdy2 += cells_input[x, y - 1] + uk[x, y - 1] * uk_delta;
+					if (y < size - 1) d2Tdy2 += cells_input[x, y + 1] + uk[x, y + 1] * uk_delta;
 
 
-	// 				if (x == 0) d2Tdx2 += cells[width - 1, y];
-	// 				if (x == width - 1) d2Tdx2 += cells[0, y];
-	// 				if (y == 0) d2Tdy2 += cells[x, height - 1];
-	// 				if (y == height - 1) d2Tdy2 += cells[x, 0];
+					if (x == 0) d2Tdx2 += cells_input[size - 1, y] + uk[size - 1, y] * uk_delta;
+					if (x == size - 1) d2Tdx2 += cells_input[0, y] + uk[0, y] * uk_delta;
+					if (y == 0) d2Tdy2 += cells_input[x, size - 1] + uk[x, size - 1] * uk_delta;
+					if (y == size - 1) d2Tdy2 += cells_input[x, 0] + uk[x, 0] * uk_delta;
 
-	// 				d2Tdx2 -= 2 * cells[x, y];
-	// 				d2Tdy2 -= 2 * cells[x, y];
+					d2Tdx2 -= 2 * (cells_input[x, y] + uk[x, y] * uk_delta);
+					d2Tdy2 -= 2 * (cells_input[x, y] + uk[x, y] * uk_delta);
 
-	// 				dTdt[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
-	// 			}
-	// 		}
 
-	// 		return dTdt;
-	// 	}
+					dTdt_output[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
+				}
+			}
 
-	// 	// https://i.imgur.com/RIlJM32.png
-	// 	// https://zhuanlan.zhihu.com/p/8616433050
-	// 	double[,] rk4(double[,] cells, double dt, int width, int height, double dx2, double alpha)
-	// 	{
-	// 		double[,] T = new double[width, height];
+			return dTdt_output;
+		}
 
-	// 		// 处理内部
-	// 		for (int x = 0; x < width; x++)
-	// 		{
-	// 			for (int y = 0; y < height; y++)
-	// 			{
-	// 				T[x, y] = cells[x, y];
-	// 			}
-	// 		}
+		// rk4计算
+		// https://zhuanlan.zhihu.com/p/8616433050
+		List<CellCalculateStruct> 这个是新的rk4(List<CellCalculateStruct> _cellList, float dt, int size, float dx2, float alpha)
+		{
+			int listLength = _cellList.Count;
 
-	// 		// 时间积分：使用 Runge-Kutta 方法
-	// 		// 计算k1234
-	// 		double[,] k1 = ComputeHeatEquation(cells, width, height, dx2, alpha);
-	// 		double[,] k2 = ComputeHeatEquation(cells, width, height, dx2, alpha);
-	// 		double[,] k3 = ComputeHeatEquation(cells, width, height, dx2, alpha);
-	// 		double[,] k4 = ComputeHeatEquation(cells, width, height, dx2, alpha);
+			List<CellCalculateStruct> T = [.. _cellList];
 
-	// 		// 更新u_i^(n+1)
-	// 		for (int x = 0; x < width; x++)
-	// 		{
-	// 			for (int y = 0; y < height; y++)
-	// 			{
-	// 				T[x, y] += dt / 6 * (k1[x, y] + 2 * k2[x, y] + 2 * k3[x, y] + k4[x, y]);
-	// 			}
-	// 		}
+			var k1 = 这个是新的ComputeHeatEquation(cells, null, 0, size, dx2, alpha);
+			var k2 = 这个是新的ComputeHeatEquation(cells, k1, delta / 2, size, dx2, alpha);
+			var k3 = 这个是新的ComputeHeatEquation(cells, k2, delta / 2, size, dx2, alpha);
+			var k4 = 这个是新的ComputeHeatEquation(cells, k3, delta, size, dx2, alpha);
 
-	// 		return T;
-	// 	}
+			for (int i = 0; i < listLength; i++)
+			{
+				T[i].LocalTemp +=  dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
+			}
+			return T;
+		}
 
-	// 	// 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
-	// 	List<Cell2D> cellsUpdate = CellList;
-	// 	double[,] tNew = rk4(CellList, delta, Width, Height, dx2, Alpha);
-	// 	CellsDerivative = ComputeHeatEquation(CellList, Width, Height, dx2, Alpha);
+		double[,] rk4(double[,] cells, double dt, int size, double dx2, double alpha)
+		{
+			var T = new double[size, size];
 
-	// 	for (int x = 0; x < Width; x++)
-	// 	{
-	// 		for (int y = 0; y < Height; y++)
-	// 		{
-	// 			cellsUpdate[x, y] = (float)tNew[x, y];
-	// 		}
-	// 	}
+			// 处理内部
+			for (var x = 0; x < size; x++)
+			{
+				for (var y = 0; y < size; y++)
+				{
+					T[x, y] = cells[x, y];
+				}
+			}
 
-	// 	// 距平值计算
-	// 	for (int x = 0; x < Width; x++)
-	// 	{
-	// 		for (int y = 0; y < Height; y++)
-	// 		{
-	// 			_cellsAverage[x, y] += (CellList[x, y] - _cellsAverage[x, y]) / (_averageCount + 1);
-	// 		}
-	// 	}
+			// 时间积分：使用 Runge-Kutta 方法
+			// 计算k1234
+			var k1 = ComputeHeatEquation(cells, null, 0, size, dx2, alpha);
+			var k2 = ComputeHeatEquation(cells, k1, delta / 2, size, dx2, alpha);
+			var k3 = ComputeHeatEquation(cells, k2, delta / 2, size, dx2, alpha);
+			var k4 = ComputeHeatEquation(cells, k3, delta, size, dx2, alpha);
 
-	// 	// 单元格的距平值
-	// 	for (int x = 0; x < Width; x++)
-	// 	{
-	// 		for (int y = 0; y < Height; y++)
-	// 		{
-	// 			CellsAnomaly[x, y] = CellList[x, y] - _cellsAverage[x, y];
-	// 		}
-	// 	}
+			// 更新u_i^(n+1)
+			for (var x = 0; x < size; x++)
+			{
+				for (var y = 0; y < size; y++)
+				{
+					T[x, y] += dt / 6 * (k1[x, y] + 2 * k2[x, y] + 2 * k3[x, y] + k4[x, y]);
+				}
+			}
 
-	// 	if (_averageCount < 1000)
-	// 		_averageCount++;
+			return T;
+		}
 
-	// 	CellList = cellsUpdate;
-	// }
 
+		
+		// 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
+		var cellsUpdate = Cells;
+		var tNew = rk4(Cells, delta, size, dx2, Alpha);
+		CellsDerivative = ComputeHeatEquation(Cells, null, 0, size, dx2, Alpha);
+
+		for (var x = 0; x < size; x++)
+		{
+			for (var y = 0; y < size; y++)
+			{
+				cellsUpdate[x, y] = (float)tNew[x, y];
+			}
+		}
+
+		// 距平值计算
+		for (var x = 0; x < size; x++)
+		{
+			for (var y = 0; y < size; y++)
+			{
+				_cellsAverage[x, y] += (Cells[x, y] - _cellsAverage[x, y]) / (_averageCount + 1);
+			}
+		}
+
+		// 单元格的距平值
+		for (var x = 0; x < size; x++)
+		{
+			for (var y = 0; y < size; y++)
+			{
+				CellsAnomaly[x, y] = Cells[x, y] - _cellsAverage[x, y];
+			}
+		}
+
+		if (_averageCount < 1000)
+			_averageCount++;
+
+		Cells = cellsUpdate;
+	}
+
+	private class CellCalculateStruct
+	{
+		public float LocalTemp = 0;
+		public float UpTemp = 0;
+		public float DownTemp = 0;
+		public float LeftTemp = 0;
+		public float RightTemp = 0;
+
+		public CellCalculateStruct(Cell2D cell)
+		{
+			LocalTemp = cell.Temperature;
+			UpTemp = cell.up.Temperature;
+			DownTemp = cell.down.Temperature;
+			LeftTemp = cell.left.Temperature;
+			RightTemp = cell.right.Temperature;
+		}
+	}
 }
 
 
