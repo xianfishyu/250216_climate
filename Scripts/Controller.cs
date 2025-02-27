@@ -9,11 +9,12 @@ public partial class Controller : Node
     MeshInstance3D cellPrefab;
 
     [Export] float CellSize = 0.1f;
+    [Export] int Length = 100;
     [Export] int Width = 100;
     [Export] int Height = 100;
-    [Export] double Alpha = 1e-5;
-    Cell[,] cells;
-    
+    [Export] double Alpha = 1e-4;
+    Cell[,,] cells;
+
     // 温度分布图，变温分布图，气温距平分布图
     private enum MapType
     {
@@ -22,27 +23,35 @@ public partial class Controller : Node
         TemperatureAnomalyDistribution,
         TemperatureNum
     }
+
     private MapType _mapType = MapType.TemperatureDistribution;
 
 
     TemperatureCalculator _temperatureCalculator;
-    
+
     public override void _Ready()
     {
         _temperatureCalculator = new TemperatureCalculator(Width, Height, Alpha);
-        cells = new Cell[Width, Height];
+        cells = new Cell[Length, Width, Height];
         cellPrefab = cellScene.Instantiate<MeshInstance3D>();
-        
+
         // Create cells
-        for (int x = 0; x < Width; x++)
+        for (int i = 0; i < Length; i++)
         {
-            for (int y = 0; y < Height; y++)
+            for (int j = 0; j < 1; j++)
             {
-                MeshInstance3D cell = cellPrefab.Duplicate() as MeshInstance3D;
-                AddChild(cell);
-                cell.Scale = new Vector3(CellSize, CellSize, CellSize);
-                cell.Position = new Vector3(x * CellSize, 0, y * CellSize);
-                cells[x, y] = cell as Cell;
+                for (int k = 0; k < Height; k++)
+                {
+                    MeshInstance3D cell = cellPrefab.Duplicate() as MeshInstance3D;
+                    AddChild(cell);
+                    cell.Scale = new Vector3(CellSize, CellSize, CellSize);
+                    cell.Position = new Vector3(
+                        (i - Length / 2) * CellSize,
+                        (j - Width / 2) * CellSize,
+                        (k - Height / 2) * CellSize
+                    );
+                    cells[i, j, k] = cell as Cell;
+                }
             }
         }
     }
@@ -50,7 +59,7 @@ public partial class Controller : Node
     public override void _Process(double delta)
     {
         _temperatureCalculator.Calculate(delta);
-        
+
         // 随机生成温度
         if (Randf() < 0.1)
         {
@@ -59,8 +68,8 @@ public partial class Controller : Node
             var radius = RandRange(1, 10);
             var width = RandRange(radius, _temperatureCalculator.Width - radius);
             var height = RandRange(radius, _temperatureCalculator.Height - radius);
-            var temperature = RandRange(-54, 56);
-            
+            var temperature = RandRange(-100, 100);
+
             for (var x = 0; x < _temperatureCalculator.Width; x++)
             {
                 for (var y = 0; y < _temperatureCalculator.Height; y++)
@@ -80,30 +89,32 @@ public partial class Controller : Node
                 {
                     for (int y = 0; y < _temperatureCalculator.Height; y++)
                     {
-                        cells[x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+                        cells[x, 0, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
                     }
                 }
+
                 break;
             case MapType.TemperatureChangeDistribution:
                 for (int x = 0; x < _temperatureCalculator.Width; x++)
                 {
                     for (int y = 0; y < _temperatureCalculator.Height; y++)
                     {
-                        cells[x, y].Temperature = (float)_temperatureCalculator.CellsDerivative[x, y];
+                        cells[x, 0, y].Temperature = (float)_temperatureCalculator.CellsDerivative[x, y];
                     }
                 }
+
                 break;
             case MapType.TemperatureAnomalyDistribution:
                 for (int x = 0; x < _temperatureCalculator.Width; x++)
                 {
                     for (int y = 0; y < _temperatureCalculator.Height; y++)
                     {
-                        cells[x, y].Temperature = (float)_temperatureCalculator.CellsAnomaly[x, y];
+                        cells[x, 0, y].Temperature = (float)_temperatureCalculator.CellsAnomaly[x, y];
                     }
                 }
+
                 break;
         }
-        
     }
 
     public override void _Input(InputEvent @event)
@@ -114,7 +125,7 @@ public partial class Controller : Node
             {
                 _temperatureCalculator.ClearCells();
             }
-            
+
             if (keyEvent.Keycode == Key.T)
             {
                 Print(_mapType);
@@ -130,5 +141,3 @@ public partial class Controller : Node
         }
     }
 }
-
-

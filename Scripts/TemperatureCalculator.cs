@@ -87,7 +87,6 @@ public class TemperatureCalculator(int width, int height, double alpha)
         }
 
         // 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
-        var cellsUpdate = Cells;
         var tNew = rk4(Cells, delta, Width, Height, dx2, Alpha);
         CellsDerivative = ComputeHeatEquation(Cells, null, 0, Width, Height, dx2, Alpha);
         
@@ -95,7 +94,7 @@ public class TemperatureCalculator(int width, int height, double alpha)
         {
             for (var y = 0; y < Height; y++)
             {
-                cellsUpdate[x, y] = (float)tNew[x, y];
+                Cells[x, y] = (float)tNew[x, y];
             }
         }
         
@@ -119,8 +118,6 @@ public class TemperatureCalculator(int width, int height, double alpha)
     
         if(_averageCount < 1000)
             _averageCount ++;
-        
-        Cells = cellsUpdate;
     }
     
     public void ClearCells()
