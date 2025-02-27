@@ -57,20 +57,26 @@ public partial class Controller2D : Node2D
 		}
 	}
 
+	private Color GetHeatColor_H_OutOfRange(float temperature)
+	{
+		float range = Mathf.Abs(HotThreshold - ColdThreshold);
+		float t = Mathf.Abs(temperature - ColdThreshold) / range * (240f / 359f);
+		Color color = new(1, 0, 0);
+		color.H = t;
+		return color;
+	}
+
 	private Color GetHeatColor_H(float temperature)
 	{
 		if (temperature < ColdThreshold)
-			return ColdColor;
+			temperature = ColdThreshold;
 		else if (temperature > HotThreshold)
-			return HotColor;
-		else
-		{
-			float range = Mathf.Abs(HotThreshold - ColdThreshold);
-			float t = Mathf.Abs(temperature - ColdThreshold) / range * (240f / 359f);
-			Color color = new(1, 0, 0);
-			color.H = t;
-			return color;
-		}
+			temperature = HotThreshold;
+		float range = Mathf.Abs(HotThreshold - ColdThreshold);
+		float t = Mathf.Abs(temperature - ColdThreshold) / range * (240f / 359f);
+		Color color = new(1, 0, 0);
+		color.H = t;
+		return color;
 	}
 
 	private Color GetHeatColor_S(float temperature)
@@ -155,7 +161,7 @@ public partial class Controller2D : Node2D
 			{
 				for (int j = 0; j < chunk.Cells.GetLength(1); j++)
 				{
-					image.SetPixel(i, j, GetHeatColor_S(chunk.Cells[i, j].Temperature));
+					image.SetPixel(i, j, GetHeatColor_H(chunk.Cells[i, j].Temperature));
 				}
 			}
 
@@ -189,7 +195,7 @@ public partial class Controller2D : Node2D
 			{
 				for (int j = 0; j < chunk.Cells.GetLength(1); j++)
 				{
-					image.SetPixel(i, j, GetHeatColor_S(chunk.Cells[i, j].Temperature));
+					image.SetPixel(i, j, GetHeatColor_H(chunk.Cells[i, j].Temperature));
 				}
 			}
 			chunk.textureRect.Texture = ImageTexture.CreateFromImage(image);
@@ -221,6 +227,14 @@ public partial class Controller2D : Node2D
 			deltaT += (downT - localT) * Conductivity;
 
 			cell.Temperature += deltaT;
+
+			if (Randf() < 0.000001)
+			{
+				if (Randf() <= 0.5)
+					cell.Temperature = -1000;
+				else
+					cell.Temperature = 1000;
+			}
 
 		}
 	}
@@ -375,17 +389,17 @@ public class Cell2D
 
 	public void SetTemperature()
 	{
-		// Temperature = 10;
-		Temperature = RandRange(-100, 100);
-		// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
-		// Temperature = GeoCoordinate.X * 57.3f;
-		// Temperature = GeoCoordinate.Y * 20f;
-		// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
-		// 	Temperature = 100;
-		// else if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
-		// 	Temperature = -100;
-		// else
-		// 	Temperature = 0;
+		Temperature = 0;
+		// Temperature = RandRange(-100, 100);
+		// // Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
+		// // Temperature = GeoCoordinate.X * 57.3f;
+		// // Temperature = GeoCoordinate.Y * 20f;
+		// // if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
+		// // 	Temperature = 100;
+		// // else if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
+		// // 	Temperature = -100;
+		// // else
+		// // 	Temperature = 0;
 	}
 }
 
@@ -446,7 +460,10 @@ public class Chunk
 				}
 				localPos += innerPos;
 				Cells[i, j] = new Cell2D(localPos);
+				// if (toward == Toward.Up)
+				// 	Cells[i, j].Temperature = 100;
 			}
+
 		}
 	}
 

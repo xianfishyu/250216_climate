@@ -15,7 +15,7 @@ var mousePos = Vector2.ZERO
 func _ready():
 	nextPos = position
 
-func _process(_delta):
+func _physics_process(delta):
 	_key_pos_update()
 	_scale_update()
 	_mouse_pos_update()
