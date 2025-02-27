@@ -18,7 +18,7 @@ public class TemperatureCalculator(int width, int height, double alpha)
         var dx2 = 1.0 / ((Width - 1) * (Height - 1));
 
         // 辅助函数，用于计算温度分布的导数
-        double[,] ComputeHeatEquation(double[,] cells, int width, int height, double dx2, double alpha)
+        double[,] ComputeHeatEquation(double[,] cells, double[,] uk,int width, int height, double dx2, double alpha)
         {
             double[,] dTdt = new double[width, height];
             for (int x = 0; x < width; x++)
@@ -27,20 +27,23 @@ public class TemperatureCalculator(int width, int height, double alpha)
                 {
                     double d2Tdx2 = 0;
                     double d2Tdy2 = 0;
+                    
+                    uk ??= new double[width, height];
 
-                    if (x > 0) d2Tdx2 += cells[x - 1, y];
-                    if (x < width - 1) d2Tdx2 += cells[x + 1, y];
-                    if (y > 0) d2Tdy2 += cells[x, y - 1];
-                    if (y < height - 1) d2Tdy2 += cells[x, y + 1];
+                    if (x > 0) d2Tdx2 += cells[x - 1, y] + uk[x - 1, y] / 2;
+                    if (x < width - 1) d2Tdx2 += cells[x + 1, y] + uk[x + 1, y] / 2;
+                    if (y > 0) d2Tdy2 += cells[x, y - 1] + uk[x, y - 1] / 2;
+                    if (y < height - 1) d2Tdy2 += cells[x, y + 1] + uk[x, y + 1] / 2;
 
 
-                    if (x == 0) d2Tdx2 += cells[width - 1, y];
-                    if (x == width - 1) d2Tdx2 += cells[0, y];
-                    if (y == 0) d2Tdy2 += cells[x, height - 1];
-                    if (y == height - 1) d2Tdy2 += cells[x, 0];
+                    if (x == 0) d2Tdx2 += cells[width - 1, y] + uk[width - 1, y] / 2;
+                    if (x == width - 1) d2Tdx2 += cells[0, y] + uk[0, y] / 2;
+                    if (y == 0) d2Tdy2 += cells[x, height - 1] + uk[x, height - 1] / 2;
+                    if (y == height - 1) d2Tdy2 += cells[x, 0] + uk[x, 0] / 2;
 
-                    d2Tdx2 -= 2 * cells[x, y];
-                    d2Tdy2 -= 2 * cells[x, y];
+                    d2Tdx2 -= 2 * cells[x, y] + uk[x, y];
+                    d2Tdy2 -= 2 * cells[x, y] + uk[x, y];
+                    
 
                     dTdt[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
                 }
@@ -66,10 +69,10 @@ public class TemperatureCalculator(int width, int height, double alpha)
 
             // 时间积分：使用 Runge-Kutta 方法
             // 计算k1234
-            var k1 = ComputeHeatEquation(cells, width, height, dx2, alpha);
-            var k2 = ComputeHeatEquation(cells, width, height, dx2, alpha);
-            var k3 = ComputeHeatEquation(cells, width, height, dx2, alpha);
-            var k4 = ComputeHeatEquation(cells, width, height, dx2, alpha);
+            var k1 = ComputeHeatEquation(cells, null, width, height, dx2, alpha);
+            var k2 = ComputeHeatEquation(cells, k1, width, height, dx2, alpha);
+            var k3 = ComputeHeatEquation(cells, k2, width, height, dx2, alpha);
+            var k4 = ComputeHeatEquation(cells, k3, width, height, dx2, alpha);
 
             // 更新u_i^(n+1)
             for (var x = 0; x < width; x++)
@@ -86,7 +89,7 @@ public class TemperatureCalculator(int width, int height, double alpha)
         // 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
         var cellsUpdate = Cells;
         var tNew = rk4(Cells, delta, Width, Height, dx2, Alpha);
-        CellsDerivative = ComputeHeatEquation(Cells, Width, Height, dx2, Alpha);
+        CellsDerivative = ComputeHeatEquation(Cells, null, Width, Height, dx2, Alpha);
         
         for (var x = 0; x < Width; x++)
         {

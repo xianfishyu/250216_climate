@@ -11,7 +11,7 @@ public partial class Controller : Node
     [Export] float cellSize = 0.1f;
     [Export] int Width = 100;
     [Export] int Height = 100;
-    [Export] Double Alpha = 1e-4;
+    [Export] double Alpha = 1e-5;
     Cell[,] cells;
     
     // 温度分布图，变温分布图，气温距平分布图

@@ -839,4 +839,3 @@ public struct Toward
 	public static readonly Vector3 Forward = Vector3.Forward;
 	public static readonly Vector3 Back = Vector3.Back;
 }
-
