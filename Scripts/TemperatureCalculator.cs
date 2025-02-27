@@ -20,6 +20,7 @@ public class TemperatureCalculator(int width, int height, double alpha)
         // 辅助函数，用于计算温度分布的导数
         double[,] ComputeHeatEquation(double[,] cells, double[,] uk,int width, int height, double dx2, double alpha)
         {
+            uk ??= new double[width, height];
             double[,] dTdt = new double[width, height];
             for (int x = 0; x < width; x++)
             {
@@ -28,7 +29,6 @@ public class TemperatureCalculator(int width, int height, double alpha)
                     double d2Tdx2 = 0;
                     double d2Tdy2 = 0;
                     
-                    uk ??= new double[width, height];
 
                     if (x > 0) d2Tdx2 += cells[x - 1, y] + uk[x - 1, y] / 2;
                     if (x < width - 1) d2Tdx2 += cells[x + 1, y] + uk[x + 1, y] / 2;
