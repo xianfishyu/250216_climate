@@ -1,23 +1,28 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Godot.GD;
 
 // [Tool]
 public partial class Controller2D : Node2D
 {
 	private Dictionary<string, Chunk> Chunks = new();
-	private List<Cell2D> CellList = new();
 	private List<CellIndex> CellIndexList = new();
+	private float[] LocalTList;
 
 	[ExportCategory("ComputeShaderSettings")]
 	[Export] private string ComputeShaderPath;
 	private RenderingDevice RD;
 	private Rid ComputeShader;
 	private Rid ComputePipeline;
+	private Rid UniformSet;
+	private Rid LocalTBuffer;
+	private Rid CellIndexBuffer;
+
 
 	[ExportCategory("CellsSettings")]
-	[Export] private int CellResolution = 100;
+	[Export(PropertyHint.Range, "30,1200,30,or_greater,or_less")] private int CellResolution = 120;
 	[Export] private float Conductivity = 0.1f;
 
 	[ExportCategory("TextureSettings")]
@@ -47,6 +52,7 @@ public partial class Controller2D : Node2D
 
 		Timer.Timeout += Calculate;
 		Timer.Timeout += TextureUpdate;
+		Timer.Timeout += ComputeShaderCal;
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -82,7 +88,7 @@ public partial class Controller2D : Node2D
 		else if (temperature > HotThreshold)
 			temperature = HotThreshold;
 		float range = Mathf.Abs(HotThreshold - ColdThreshold);
-		float t = Mathf.Abs(temperature - ColdThreshold) / range * (240f / 359f);
+		float t = Mathf.Abs(temperature - HotThreshold) / range * (240f / 359f);
 		Color color = new(1, 0, 0);
 		color.H = t;
 		return color;
@@ -121,9 +127,6 @@ public partial class Controller2D : Node2D
 		RDShaderSpirV shaderBytecode = ComputeShaderFile.GetSpirV();
 		ComputeShader = RD.ShaderCreateFromSpirV(shaderBytecode);
 
-		// 创建计算管线
-		ComputePipeline = RD.ComputePipelineCreate(ComputeShader);
-
 		//初始化数组
 		float[] LocalT = new float[cellIndexList.Count];
 		Vector4I[] CellIndex = new Vector4I[cellIndexList.Count];
@@ -135,13 +138,73 @@ public partial class Controller2D : Node2D
 		}
 
 		//字节化
-		byte[] LocalTOfByte = new byte[LocalT.Length * sizeof(float)];
-		Buffer.BlockCopy(LocalT, 0, LocalTOfByte, 0, LocalTOfByte.Length);
-		Rid LocalTBuffer = RD.StorageBufferCreate((uint)LocalTOfByte.Length, LocalTOfByte);
+		LocalTBuffer = CreateFloatBuffer(LocalT);
+		CellIndexBuffer = CreateVector4IBuffer(CellIndex);
 
-		byte[] CellIndexOfByte = new byte[CellIndex.Length * 16];
-		Buffer.BlockCopy(CellIndex, 0, CellIndexOfByte, 0, CellIndexOfByte.Length);
-		Rid CellIndexBuffer = RD.StorageBufferCreate((uint)CellIndexOfByte.Length, CellIndexOfByte);
+		Godot.Collections.Array<RDUniform> uniforms =
+		[
+			new RDUniform
+			{
+				UniformType = RenderingDevice.UniformType.StorageBuffer,
+				Binding = 0,
+			},
+			new RDUniform
+			{
+				UniformType = RenderingDevice.UniformType.StorageBuffer,
+				Binding = 1,
+			},
+		];
+		uniforms[0].AddId(LocalTBuffer);
+		uniforms[1].AddId(CellIndexBuffer);
+		UniformSet = RD.UniformSetCreate(uniforms, ComputeShader, 0);
+
+		Rid CreateFloatBuffer(float[] data)
+		{
+			byte[] bytes = new byte[data.Length * sizeof(float)];
+			Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
+			return RD.StorageBufferCreate((uint)bytes.Length, bytes);
+		}
+
+		Rid CreateVector4IBuffer(Vector4I[] data)
+		{
+			// 注意：确保Vector4I的内存布局与shader的uvec4一致
+			byte[] bytes = new byte[data.Length * 16]; // 每个Vector4I占16字节
+													   // Print("Output: ", string.Join(", ", data));
+			for (int i = 0; i < data.Length; i++)
+			{
+				byte[] x = BitConverter.GetBytes(data[i].X);
+				// Print("Output: ", string.Join(", ", x));
+				byte[] y = BitConverter.GetBytes(data[i].Y);
+				byte[] z = BitConverter.GetBytes(data[i].Z);
+				byte[] w = BitConverter.GetBytes(data[i].W);
+
+				Buffer.BlockCopy(x, 0, bytes, i * 16 + 0, 4);
+				Buffer.BlockCopy(y, 0, bytes, i * 16 + 4, 4);
+				Buffer.BlockCopy(z, 0, bytes, i * 16 + 8, 4);
+				Buffer.BlockCopy(w, 0, bytes, i * 16 + 12, 4);
+			}
+
+			return RD.StorageBufferCreate((uint)bytes.Length, bytes);
+		}
+
+	}
+
+	private void ComputeShaderCal()
+	{
+		// 创建计算管线
+		ComputePipeline = RD.ComputePipelineCreate(ComputeShader);
+		long computeList = RD.ComputeListBegin();
+		RD.ComputeListBindComputePipeline(computeList, ComputePipeline);
+		RD.ComputeListBindUniformSet(computeList, UniformSet, 0);
+		RD.ComputeListDispatch(computeList, xGroups: (uint)CellResolution / 30, (uint)CellResolution / 30, zGroups: 6);
+		RD.ComputeListEnd();
+		RD.Submit();
+		RD.Sync();
+
+		// 读取内容
+		var outputBytes = RD.BufferGetData(LocalTBuffer);
+		Buffer.BlockCopy(outputBytes, 0, LocalTList, 0, outputBytes.Length);
+		// Print("Output: ", string.Join(", ", LocalTList));
 	}
 
 	private void ChunkReady()
@@ -149,7 +212,6 @@ public partial class Controller2D : Node2D
 		foreach (Chunk chunk in Chunks.Values)
 			chunk.textureRect?.QueueFree();
 		Chunks.Clear();
-		CellList.Clear();
 		CellIndexList.Clear();
 
 		Chunks.Add("Up", new(Toward.Up, CellResolution));
@@ -193,8 +255,11 @@ public partial class Controller2D : Node2D
 		foreach (Chunk chunk in Chunks.Values)
 			chunk.SetNodeList();
 
-		SetCellList();
-		CellIndexList = SetIndexList(CellList);
+
+		CellIndexList = SetIndexList(Chunks);
+		LocalTList = new float[CellIndexList.Count];
+		for (var i = 0; i < CellIndexList.Count; i++)
+			LocalTList[i] = CellIndexList[i].temperature;
 	}
 
 	private void TextureReady()
@@ -247,17 +312,15 @@ public partial class Controller2D : Node2D
 		}
 	}
 
-	private void SetCellList()
+	private static List<CellIndex> SetIndexList(Dictionary<string, Chunk> chunks)
 	{
-		foreach (Chunk chunk in Chunks.Values)
+		List<Cell2D> cellList = [];
+		foreach (Chunk chunk in chunks.Values)
 			foreach (Cell2D cell in chunk.Cells)
 			{
-				CellList.Add(cell);
+				cellList.Add(cell);
 			}
-	}
 
-	private List<CellIndex> SetIndexList(List<Cell2D> cellList)
-	{
 		Dictionary<Cell2D, int> dic = new(cellList.Count);
 		for (int i = 0; i < cellList.Count; i++)
 		{
@@ -281,426 +344,12 @@ public partial class Controller2D : Node2D
 		return index;
 	}
 
-	// private void CalculateOld()
-	// {
-	// 	foreach (Cell2D cell in CellList)
-	// 	{
-	// 		float leftT = cell.left.Temperature;
-	// 		float rightT = cell.right.Temperature;
-	// 		float upT = cell.up.Temperature;
-	// 		float downT = cell.down.Temperature;
-	// 		float localT = cell.Temperature;
-	// 		float deltaT = 0;
-
-	// 		deltaT += (leftT - localT) * Conductivity;
-	// 		deltaT += (rightT - localT) * Conductivity;
-	// 		deltaT += (upT - localT) * Conductivity;
-	// 		deltaT += (downT - localT) * Conductivity;
-
-	// 		cell.Temperature += deltaT;
-
-	// 		if (Randf() < 0.000001)
-	// 		{
-	// 			if (Randf() <= 0.5)
-	// 				cell.Temperature = -1000;
-	// 			else
-	// 				cell.Temperature = 1000;
-	// 		}
-
-	// 	}
-	// }
-
-
-	// public void Calculate(List<Cell2D> cellList, int size, float delta, float Alpha)
-	// {
-	// 	float dx2 = 1.0f / ((size - 1) * (size - 1));
-
-	// 	List<CellCalculateStruct> convertCellList = [];
-	// 	foreach (var cell in cellList)
-	// 		convertCellList.Add(new CellCalculateStruct(cell));
-
-	// 	// 辅助函数，用于计算温度分布的导数
-	// 	List<CellCalculateStruct> 这个是新的ComputeHeatEquation(List<CellCalculateStruct> _cellList, List<CellCalculateStruct> uk, float uk_delta, int size, float dx2, float alpha)
-	// 	{
-	// 		int listLength = _cellList.Count;
-
-	// 		if (uk == null)
-	// 		{
-	// 			uk = [];
-	// 			for (var i = 0; i < listLength; i++)
-	// 			{
-	// 				uk.Add(new CellCalculateStruct());
-	// 			}
-	// 		}
-
-	// 		List<CellCalculateStruct> dTdt_output = [];
-	// 		for (var i = 0; i < listLength; i++)
-	// 		{
-	// 			dTdt_output.Add(new CellCalculateStruct());
-	// 		}
-
-	// 		for (int i = 0; i < listLength; i++)
-	// 		{
-	// 			float d2Tdx2 = 0;
-	// 			float d2Tdy2 = 0;
-
-	// 			d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
-	// 			d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
-	// 			d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
-	// 			d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
-
-	// 			d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-	// 			d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-
-	// 			dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
-	// 		}
-
-	// 		return dTdt_output;
-	// 	}
-
-	// 	// double[,] ComputeHeatEquation(double[,] cells_input, double[,] uk, double uk_delta, int size, double dx2, double alpha)
-	// 	// {
-	// 	// 	uk ??= new double[size, size];
-	// 	// 	double[,] dTdt_output = new double[size, size];
-	// 	// 	for (int x = 0; x < size; x++)
-	// 	// 	{
-	// 	// 		for (int y = 0; y < size; y++)
-	// 	// 		{
-	// 	// 			double d2Tdx2 = 0;
-	// 	// 			double d2Tdy2 = 0;
-
-
-	// 	// 			if (x > 0) d2Tdx2 += cells_input[x - 1, y] + uk[x - 1, y] * uk_delta;
-	// 	// 			if (x < size - 1) d2Tdx2 += cells_input[x + 1, y] + uk[x + 1, y] * uk_delta;
-	// 	// 			if (y > 0) d2Tdy2 += cells_input[x, y - 1] + uk[x, y - 1] * uk_delta;
-	// 	// 			if (y < size - 1) d2Tdy2 += cells_input[x, y + 1] + uk[x, y + 1] * uk_delta;
-
-
-	// 	// 			if (x == 0) d2Tdx2 += cells_input[size - 1, y] + uk[size - 1, y] * uk_delta;
-	// 	// 			if (x == size - 1) d2Tdx2 += cells_input[0, y] + uk[0, y] * uk_delta;
-	// 	// 			if (y == 0) d2Tdy2 += cells_input[x, size - 1] + uk[x, size - 1] * uk_delta;
-	// 	// 			if (y == size - 1) d2Tdy2 += cells_input[x, 0] + uk[x, 0] * uk_delta;
-
-	// 	// 			d2Tdx2 -= 2 * (cells_input[x, y] + uk[x, y] * uk_delta);
-	// 	// 			d2Tdy2 -= 2 * (cells_input[x, y] + uk[x, y] * uk_delta);
-
-
-	// 	// 			dTdt_output[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
-	// 	// 		}
-	// 	// 	}
-
-	// 	// 	return dTdt_output;
-	// 	// }
-
-	// 	// rk4计算
-	// 	// https://zhuanlan.zhihu.com/p/8616433050
-	// 	List<CellCalculateStruct> 这个是新的rk4(List<CellCalculateStruct> _cellList, float dt, int size, float dx2, float alpha)
-	// 	{
-	// 		int listLength = _cellList.Count;
-
-	// 		List<CellCalculateStruct> T = [.. _cellList];
-
-	// 		var k1 = 这个是新的ComputeHeatEquation(_cellList, null, 0, size, dx2, alpha);
-	// 		var k2 = 这个是新的ComputeHeatEquation(_cellList, k1, delta / 2, size, dx2, alpha);
-	// 		var k3 = 这个是新的ComputeHeatEquation(_cellList, k2, delta / 2, size, dx2, alpha);
-	// 		var k4 = 这个是新的ComputeHeatEquation(_cellList, k3, delta, size, dx2, alpha);
-
-	// 		for (int i = 0; i < listLength; i++)
-	// 		{
-	// 			T[i].LocalTemp += dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
-	// 		}
-	// 		return T;
-	// 	}
-
-	// 	// double[,] rk4(double[,] cells, double dt, int size, double dx2, double alpha)
-	// 	// {
-	// 	// 	var T = new double[size, size];
-
-	// 	// 	// 处理内部
-	// 	// 	for (var x = 0; x < size; x++)
-	// 	// 	{
-	// 	// 		for (var y = 0; y < size; y++)
-	// 	// 		{
-	// 	// 			T[x, y] = cells[x, y];
-	// 	// 		}
-	// 	// 	}
-
-	// 	// 	// 时间积分：使用 Runge-Kutta 方法
-	// 	// 	// 计算k1234
-	// 	// 	var k1 = ComputeHeatEquation(cells, null, 0, size, dx2, alpha);
-	// 	// 	var k2 = ComputeHeatEquation(cells, k1, delta / 2, size, dx2, alpha);
-	// 	// 	var k3 = ComputeHeatEquation(cells, k2, delta / 2, size, dx2, alpha);
-	// 	// 	var k4 = ComputeHeatEquation(cells, k3, delta, size, dx2, alpha);
-
-	// 	// 	// 更新u_i^(n+1)
-	// 	// 	for (var x = 0; x < size; x++)
-	// 	// 	{
-	// 	// 		for (var y = 0; y < size; y++)
-	// 	// 		{
-	// 	// 			T[x, y] += dt / 6 * (k1[x, y] + 2 * k2[x, y] + 2 * k3[x, y] + k4[x, y]);
-	// 	// 		}
-	// 	// 	}
-
-	// 	// 	return T;
-	// 	// }
-
-	// 	//新的
-	// 	List<CellCalculateStruct> cellUpdate = 这个是新的rk4(convertCellList, delta, size, dx2, Alpha);
-
-	// 	for (var i = 0; i < cellList.Count; i++)
-	// 	{
-	// 		cellList[i].Temperature = cellUpdate[i].LocalTemp;
-	// 		// if (Randf() < 0.0001)
-	// 		// {
-	// 		// 	if (Randf() <= 0.5)
-	// 		// 		cellList[i].Temperature = -100;
-	// 		// 	else
-	// 		// 		cellList[i].Temperature = 100;
-	// 		// }
-	// 	}
-
-
-
-	// 	// 	// 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
-	// 	// 	var cellsUpdate = Cells;
-	// 	// 	var tNew = rk4(Cells, delta, size, dx2, Alpha);
-	// 	// 	CellsDerivative = ComputeHeatEquation(Cells, null, 0, size, dx2, Alpha);
-
-	// 	// 	for (var x = 0; x < size; x++)
-	// 	// 	{
-	// 	// 		for (var y = 0; y < size; y++)
-	// 	// 		{
-	// 	// 			cellsUpdate[x, y] = (float)tNew[x, y];
-	// 	// 		}
-	// 	// 	}
-
-	// 	// 	// 距平值计算
-	// 	// 	for (var x = 0; x < size; x++)
-	// 	// 	{
-	// 	// 		for (var y = 0; y < size; y++)
-	// 	// 		{
-	// 	// 			_cellsAverage[x, y] += (Cells[x, y] - _cellsAverage[x, y]) / (_averageCount + 1);
-	// 	// 		}
-	// 	// 	}
-
-	// 	// 	// 单元格的距平值
-	// 	// 	for (var x = 0; x < size; x++)
-	// 	// 	{
-	// 	// 		for (var y = 0; y < size; y++)
-	// 	// 		{
-	// 	// 			CellsAnomaly[x, y] = Cells[x, y] - _cellsAverage[x, y];
-	// 	// 		}
-	// 	// 	}
-
-	// 	// 	if (_averageCount < 1000)
-	// 	// 		_averageCount++;
-
-	// 	// 	Cells = cellsUpdate;
-	// 	// }
-	// }
-
-
-	float delta = 0.1f;
-	float Alpha = 1e-4f;
-	// public void Calculate正确的()
-	// {
-	// 	float dx2 = 1.0f / ((CellResolution - 1) * (CellResolution - 1));
-	// 	List<Cell2DStruct> convertCellList = [];
-	// 	foreach (var cell in CellList)
-	// 		convertCellList.Add(new Cell2DStruct(cell));
-
-
-	// 	// 辅助函数，用于计算温度分布的导数
-	// 	List<Cell2DStruct> ComputeHeatEquation(List<Cell2DStruct> _cellList, List<Cell2DStruct> uk, float uk_delta, int size, float dx2, float alpha)
-	// 	{
-	// 		int listLength = _cellList.Count;
-
-	// 		if (uk == null)
-	// 		{
-	// 			uk = [];
-	// 			for (var i = 0; i < listLength; i++)
-	// 			{
-	// 				uk.Add(new Cell2DStruct());
-	// 			}
-	// 		}
-
-	// 		List<Cell2DStruct> dTdt_output = [];
-	// 		for (var i = 0; i < listLength; i++)
-	// 		{
-	// 			dTdt_output.Add(new Cell2DStruct());
-	// 		}
-
-	// 		for (int i = 0; i < listLength; i++)
-	// 		{
-	// 			float d2Tdx2 = 0;
-	// 			float d2Tdy2 = 0;
-
-	// 			d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
-	// 			d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
-	// 			d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
-	// 			d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
-
-	// 			d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-	// 			d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-
-	// 			dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
-	// 		}
-
-	// 		return dTdt_output;
-	// 	}
-
-	// 	// rk4计算
-	// 	// https://zhuanlan.zhihu.com/p/8616433050
-	// 	List<Cell2DStruct> rk4(List<Cell2DStruct> _cellList, float dt, int size, float dx2, float alpha)
-	// 	{
-	// 		int listLength = _cellList.Count;
-
-	// 		List<Cell2DStruct> T = [.. _cellList];
-
-	// 		var k1 = ComputeHeatEquation(_cellList, null, 0, size, dx2, alpha);
-	// 		var k2 = ComputeHeatEquation(_cellList, k1, delta / 2, size, dx2, alpha);
-	// 		var k3 = ComputeHeatEquation(_cellList, k2, delta / 2, size, dx2, alpha);
-	// 		var k4 = ComputeHeatEquation(_cellList, k3, delta, size, dx2, alpha);
-
-	// 		for (int i = 0; i < listLength; i++)
-	// 		{
-	// 			T[i].LocalTemp += dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
-	// 		}
-	// 		return T;
-	// 	}
-
-	// 	//新的
-	// 	convertCellList = rk4(convertCellList, delta, CellResolution, dx2, Alpha);
-
-	// 	for (var i = 0; i < CellList.Count; i++)
-	// 	{
-	// 		CellList[i].Temperature = convertCellList[i].LocalTemp;
-	// 	}
-	// }
-
-	// public void Calculate不知道()
-	// {
-	// 	float dx2 = 1.0f / ((CellResolution - 1) * (CellResolution - 1));
-	// 	List<Cell2DStruct> convertCellList = [];
-	// 	foreach (var cell in CellList)
-	// 		convertCellList.Add(new Cell2DStruct(cell));
-
-
-	// 	// 辅助函数，用于计算温度分布的导数
-	// 	List<Cell2DStruct> ComputeHeatEquation(List<Cell2DStruct> _cellList, List<Cell2DStruct> uk, float uk_delta, int size, float dx2, float alpha)
-	// 	{
-	// 		int listLength = _cellList.Count;
-
-	// 		if (uk == null)
-	// 		{
-	// 			uk = [];
-	// 			for (var i = 0; i < listLength; i++)
-	// 			{
-	// 				uk.Add(new Cell2DStruct());
-	// 			}
-	// 		}
-
-	// 		List<Cell2DStruct> dTdt_output = [];
-	// 		for (var i = 0; i < listLength; i++)
-	// 		{
-	// 			dTdt_output.Add(new Cell2DStruct());
-	// 		}
-
-	// 		for (int i = 0; i < listLength; i++)
-	// 		{
-	// 			float d2Tdx2 = 0;
-	// 			float d2Tdy2 = 0;
-
-	// 			d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
-	// 			d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
-	// 			d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
-	// 			d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
-
-	// 			d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-	// 			d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-
-	// 			dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
-	// 		}
-
-	// 		return dTdt_output;
-	// 	}
-
-	// 	// rk4计算
-	// 	// https://zhuanlan.zhihu.com/p/8616433050
-	// 	List<Cell2DStruct> rk4(List<Cell2DStruct> _cellList, float dt, int size, float dx2, float alpha)
-	// 	{
-	// 		int listLength = _cellList.Count;
-
-	// 		List<Cell2DStruct> T = [.. _cellList];
-
-	// 		var k1 = ComputeHeatEquation(_cellList, null, 0, size, dx2, alpha);
-	// 		var k2 = ComputeHeatEquation(_cellList, k1, delta / 2, size, dx2, alpha);
-	// 		var k3 = ComputeHeatEquation(_cellList, k2, delta / 2, size, dx2, alpha);
-	// 		var k4 = ComputeHeatEquation(_cellList, k3, delta, size, dx2, alpha);
-
-	// 		for (int i = 0; i < listLength; i++)
-	// 		{
-	// 			T[i].LocalTemp += dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
-	// 		}
-	// 		return T;
-	// 	}
-
-	// 	//新的
-	// 	convertCellList = rk4(convertCellList, delta, CellResolution, dx2, Alpha);
-
-	// 	for (var i = 0; i < CellList.Count; i++)
-	// 	{
-	// 		CellList[i].Temperature = convertCellList[i].LocalTemp;
-	// 	}
-	// }
-
 	public void Calculate()
 	{
-		for (int i = 0; i < CellList.Count; i++)
+		for (var i = 0; i < CellIndexList.Count; i++)
 		{
-			float leftT = CellIndexList[CellIndexList[i].index.Z].temperature;
-			float rightT = CellIndexList[CellIndexList[i].index.W].temperature;
-			float upT = CellIndexList[CellIndexList[i].index.X].temperature;
-			float downT = CellIndexList[CellIndexList[i].index.Y].temperature;
-			float localT = CellIndexList[i].temperature;
-			float deltaT = 0;
-
-			deltaT += (leftT - localT) * Conductivity;
-			deltaT += (rightT - localT) * Conductivity;
-			deltaT += (upT - localT) * Conductivity;
-			deltaT += (downT - localT) * Conductivity;
-
-			CellIndexList[i].temperature += deltaT;
-
-			if (Randf() < 0.000001)
-			{
-				if (Randf() <= 0.5)
-					CellIndexList[i].temperature = -1000;
-				else
-					CellIndexList[i].temperature = 1000;
-			}
-
+			CellIndexList[i].temperature = LocalTList[i];
 		}
-	}
-
-	public class Cell2DStruct
-	{
-		public float LocalTemp = 0;
-		public float UpTemp = 0;
-		public float DownTemp = 0;
-		public float LeftTemp = 0;
-		public float RightTemp = 0;
-
-		public Cell2DStruct(Cell2D cell)
-		{
-			LocalTemp = cell.Temperature;
-			UpTemp = cell.up.Temperature;
-			DownTemp = cell.down.Temperature;
-			LeftTemp = cell.left.Temperature;
-			RightTemp = cell.right.Temperature;
-		}
-
-		public Cell2DStruct() { }
 	}
 
 	public class CellIndex
@@ -982,208 +631,6 @@ public partial class Controller2D : Node2D
 				Print("Chunk/Calculate:???你的toward哪去了?");
 
 		}
-
-		// public void Calculate(float Conductivity)
-		// {
-		// 	foreach (Cell2D cell in Cells)
-		// 	{
-		// 		float leftT = cell.left.Temperature;
-		// 		float rightT = cell.right.Temperature;
-		// 		float upT = cell.up.Temperature;
-		// 		float downT = cell.down.Temperature;
-		// 		float localT = cell.Temperature;
-		// 		float deltaT = 0;
-
-		// 		deltaT += (leftT - localT) * Conductivity;
-		// 		deltaT += (rightT - localT) * Conductivity;
-		// 		deltaT += (upT - localT) * Conductivity;
-		// 		deltaT += (downT - localT) * Conductivity;
-
-		// 		cell.Temperature += deltaT;
-		// 	}
-		// }
-
-		// public void CalculateOld(float Conductivity)
-		// {
-		// 	if (toward == Toward.Up)
-		// 	{
-		// 		for (int i = 0; i < CellResolution; i++)
-		// 		{
-		// 			for (int j = 0; j < CellResolution; j++)
-		// 			{
-		// 				float localT = Cells[i, j].Temperature;
-		// 				float deltaT = 0;
-		// 				if (i + 1 < CellResolution)
-		// 					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (RightNeighbor.Cells[(CellResolution - 1) - j, 0].Temperature - localT) * Conductivity;
-		// 				if (i - 1 >= 0)
-		// 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (LeftNeighbor.Cells[j, 0].Temperature - localT) * Conductivity;
-		// 				if (j + 1 < CellResolution)
-		// 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (DownNeighbor.Cells[i, 0].Temperature - localT) * Conductivity;
-		// 				if (j - 1 >= 0)
-		// 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (UpNeighbor.Cells[(CellResolution - 1) - i, 0].Temperature - localT) * Conductivity;
-
-		// 				Cells[i, j].Temperature += deltaT;
-		// 			}
-		// 		}
-		// 	}
-		// 	else if (toward == Toward.Down)
-		// 	{
-		// 		for (int i = 0; i < CellResolution; i++)
-		// 		{
-		// 			for (int j = 0; j < CellResolution; j++)
-		// 			{
-		// 				float localT = Cells[i, j].Temperature;
-		// 				float deltaT = 0;
-		// 				if (i + 1 < CellResolution)
-		// 					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (RightNeighbor.Cells[j, CellResolution - 1].Temperature - localT) * Conductivity;
-		// 				if (i - 1 >= 0)
-		// 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (LeftNeighbor.Cells[(CellResolution - 1) - j, CellResolution - 1].Temperature - localT) * Conductivity;
-		// 				if (j + 1 < CellResolution)
-		// 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (DownNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1].Temperature - localT) * Conductivity;
-		// 				if (j - 1 >= 0)
-		// 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (UpNeighbor.Cells[i, CellResolution - 1].Temperature - localT) * Conductivity;
-
-		// 				Cells[i, j].Temperature += deltaT;
-		// 			}
-		// 		}
-
-		// 	}
-		// 	else if (toward == Toward.Left)
-		// 	{
-		// 		for (int i = 0; i < CellResolution; i++)
-		// 		{
-		// 			for (int j = 0; j < CellResolution; j++)
-		// 			{
-		// 				float localT = Cells[i, j].Temperature;
-		// 				float deltaT = 0;
-		// 				if (i + 1 < CellResolution)
-		// 					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (RightNeighbor.Cells[0, j].Temperature - localT) * Conductivity;
-		// 				if (i - 1 >= 0)
-		// 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (LeftNeighbor.Cells[CellResolution - 1, j].Temperature - localT) * Conductivity;
-		// 				if (j + 1 < CellResolution)
-		// 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (DownNeighbor.Cells[0, (CellResolution - 1) - i].Temperature - localT) * Conductivity;
-		// 				if (j - 1 >= 0)
-		// 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (UpNeighbor.Cells[0, i].Temperature - localT) * Conductivity;
-
-		// 				Cells[i, j].Temperature += deltaT;
-		// 			}
-		// 		}
-		// 	}
-		// 	else if (toward == Toward.Right)
-		// 	{
-		// 		for (int i = 0; i < CellResolution; i++)
-		// 		{
-		// 			for (int j = 0; j < CellResolution; j++)
-		// 			{
-		// 				float localT = Cells[i, j].Temperature;
-		// 				float deltaT = 0;
-		// 				if (i + 1 < CellResolution)
-		// 					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (RightNeighbor.Cells[0, j].Temperature - localT) * Conductivity;
-		// 				if (i - 1 >= 0)
-		// 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (LeftNeighbor.Cells[CellResolution - 1, j].Temperature - localT) * Conductivity;
-		// 				if (j + 1 < CellResolution)
-		// 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (DownNeighbor.Cells[CellResolution - 1, i].Temperature - localT) * Conductivity;
-		// 				if (j - 1 >= 0)
-		// 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (UpNeighbor.Cells[CellResolution - 1, (CellResolution - 1) - i].Temperature - localT) * Conductivity;
-
-		// 				Cells[i, j].Temperature += deltaT;
-		// 			}
-		// 		}
-		// 	}
-		// 	else if (toward == Toward.Forward)
-		// 	{
-		// 		for (int i = 0; i < CellResolution; i++)
-		// 		{
-		// 			for (int j = 0; j < CellResolution; j++)
-		// 			{
-		// 				float localT = Cells[i, j].Temperature;
-		// 				float deltaT = 0;
-		// 				if (i + 1 < CellResolution)
-		// 					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (RightNeighbor.Cells[0, j].Temperature - localT) * Conductivity;
-		// 				if (i - 1 >= 0)
-		// 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (LeftNeighbor.Cells[CellResolution - 1, j].Temperature - localT) * Conductivity;
-		// 				if (j + 1 < CellResolution)
-		// 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (DownNeighbor.Cells[i, 0].Temperature - localT) * Conductivity;
-		// 				if (j - 1 >= 0)
-		// 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (UpNeighbor.Cells[i, CellResolution - 1].Temperature - localT) * Conductivity;
-
-		// 				Cells[i, j].Temperature += deltaT;
-		// 			}
-		// 		}
-		// 	}
-		// 	else if (toward == Toward.Back)
-		// 	{
-		// 		for (int i = 0; i < CellResolution; i++)
-		// 		{
-		// 			for (int j = 0; j < CellResolution; j++)
-		// 			{
-		// 				float localT = Cells[i, j].Temperature;
-		// 				float deltaT = 0;
-		// 				if (i + 1 < CellResolution)
-		// 					deltaT += (Cells[i + 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (RightNeighbor.Cells[0, j].Temperature - localT) * Conductivity;
-		// 				if (i - 1 >= 0)
-		// 					deltaT += (Cells[i - 1, j].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (LeftNeighbor.Cells[CellResolution - 1, j].Temperature - localT) * Conductivity;
-		// 				if (j + 1 < CellResolution)
-		// 					deltaT += (Cells[i, j + 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (DownNeighbor.Cells[(CellResolution - 1) - i, CellResolution - 1].Temperature - localT) * Conductivity;
-		// 				if (j - 1 >= 0)
-		// 					deltaT += (Cells[i, j - 1].Temperature - localT) * Conductivity;
-		// 				else
-		// 					deltaT += (UpNeighbor.Cells[(CellResolution - 1) - i, 0].Temperature - localT) * Conductivity;
-
-		// 				Cells[i, j].Temperature += deltaT;
-		// 			}
-		// 		}
-		// 	}
-		// 	else
-		// 	{
-		// 		Print("Chunk/Calculate:???你的toward哪去了?");
-		// 	}
 	}
 
 }
