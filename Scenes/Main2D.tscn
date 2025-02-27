@@ -9,6 +9,7 @@ metadata/_edit_lock_ = true
 
 [node name="Controller" type="Node2D" parent="." node_paths=PackedStringArray("Timer")]
 script = ExtResource("1_tpgag")
+CellResolution = 1000
 ChunkPrefab = ExtResource("2_nm3y4")
 Timer = NodePath("Timer")
 ColdThreshold = -1.0
