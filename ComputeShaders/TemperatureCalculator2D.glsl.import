@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://y8ybopepjmob"
+path="res://.godot/imported/TemperatureCalculator2D.glsl-83adf5a132b1ce2c51a9d605ea61b49f.res"
+
+[deps]
+
+source_file="res://ComputeShaders/TemperatureCalculator2D.glsl"
+dest_files=["res://.godot/imported/TemperatureCalculator2D.glsl-83adf5a132b1ce2c51a9d605ea61b49f.res"]
+
+[params]
+

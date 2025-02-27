@@ -8,6 +8,13 @@ public partial class Controller2D : Node2D
 {
 	private Dictionary<string, Chunk> Chunks = new();
 	private List<Cell2D> CellList = new();
+	private List<CellIndex> CellIndexList = new();
+
+	[ExportCategory("ComputeShaderSettings")]
+	[Export] private string ComputeShaderPath;
+	private RenderingDevice RD;
+	private Rid ComputeShader;
+	private Rid ComputePipeline;
 
 	[ExportCategory("CellsSettings")]
 	[Export] private int CellResolution = 100;
@@ -36,6 +43,7 @@ public partial class Controller2D : Node2D
 
 		ChunkReady();
 		TextureReady();
+		ComputeShaderReady(CellIndexList);
 
 		Timer.Timeout += Calculate;
 		Timer.Timeout += TextureUpdate;
@@ -53,6 +61,7 @@ public partial class Controller2D : Node2D
 			{
 				ChunkReady();
 				TextureReady();
+				ComputeShaderReady(CellIndexList);
 			}
 		}
 	}
@@ -103,13 +112,46 @@ public partial class Controller2D : Node2D
 			return HotColor;
 	}
 
+	private void ComputeShaderReady(List<CellIndex> cellIndexList)
+	{
+		//加载着色器
+		RD = RenderingServer.CreateLocalRenderingDevice();
+
+		RDShaderFile ComputeShaderFile = Load<RDShaderFile>(ComputeShaderPath);
+		RDShaderSpirV shaderBytecode = ComputeShaderFile.GetSpirV();
+		ComputeShader = RD.ShaderCreateFromSpirV(shaderBytecode);
+
+		// 创建计算管线
+		ComputePipeline = RD.ComputePipelineCreate(ComputeShader);
+
+		//初始化数组
+		float[] LocalT = new float[cellIndexList.Count];
+		Vector4I[] CellIndex = new Vector4I[cellIndexList.Count];
+
+		for (var i = 0; i < cellIndexList.Count; i++)
+		{
+			LocalT[i] = cellIndexList[i].temperature;
+			CellIndex[i] = cellIndexList[i].index;
+		}
+
+		//字节化
+		byte[] LocalTOfByte = new byte[LocalT.Length * sizeof(float)];
+		Buffer.BlockCopy(LocalT, 0, LocalTOfByte, 0, LocalTOfByte.Length);
+		Rid LocalTBuffer = RD.StorageBufferCreate((uint)LocalTOfByte.Length, LocalTOfByte);
+
+		byte[] CellIndexOfByte = new byte[CellIndex.Length * 16];
+		Buffer.BlockCopy(CellIndex, 0, CellIndexOfByte, 0, CellIndexOfByte.Length);
+		Rid CellIndexBuffer = RD.StorageBufferCreate((uint)CellIndexOfByte.Length, CellIndexOfByte);
+	}
+
 	private void ChunkReady()
 	{
 		foreach (Chunk chunk in Chunks.Values)
 			chunk.textureRect?.QueueFree();
 		Chunks.Clear();
 		CellList.Clear();
-		
+		CellIndexList.Clear();
+
 		Chunks.Add("Up", new(Toward.Up, CellResolution));
 		Chunks.Add("Down", new(Toward.Down, CellResolution));
 		Chunks.Add("Left", new(Toward.Left, CellResolution));
@@ -152,6 +194,7 @@ public partial class Controller2D : Node2D
 			chunk.SetNodeList();
 
 		SetCellList();
+		CellIndexList = SetIndexList(CellList);
 	}
 
 	private void TextureReady()
@@ -208,8 +251,34 @@ public partial class Controller2D : Node2D
 	{
 		foreach (Chunk chunk in Chunks.Values)
 			foreach (Cell2D cell in chunk.Cells)
+			{
 				CellList.Add(cell);
+			}
+	}
 
+	private List<CellIndex> SetIndexList(List<Cell2D> cellList)
+	{
+		Dictionary<Cell2D, int> dic = new(cellList.Count);
+		for (int i = 0; i < cellList.Count; i++)
+		{
+			dic[cellList[i]] = i;
+		}
+
+		List<CellIndex> index = new(cellList.Count);
+		foreach (var cell in cellList)
+		{
+			float t = cell.Temperature;
+			int up = dic[cell.up];
+			int down = dic[cell.down];
+			int left = dic[cell.left];
+			int right = dic[cell.right];
+
+			if (up == -1 || down == -1 || left == -1 || right == -1)
+				Print("Controller2D/SetIndexList:为什么你没有获得一个正常的索引,-1");
+
+			index.Add(new CellIndex(t, up, down, left, right, cell));
+		}
+		return index;
 	}
 
 	// private void CalculateOld()
@@ -433,83 +502,188 @@ public partial class Controller2D : Node2D
 
 	float delta = 0.1f;
 	float Alpha = 1e-4f;
+	// public void Calculate正确的()
+	// {
+	// 	float dx2 = 1.0f / ((CellResolution - 1) * (CellResolution - 1));
+	// 	List<Cell2DStruct> convertCellList = [];
+	// 	foreach (var cell in CellList)
+	// 		convertCellList.Add(new Cell2DStruct(cell));
+
+
+	// 	// 辅助函数，用于计算温度分布的导数
+	// 	List<Cell2DStruct> ComputeHeatEquation(List<Cell2DStruct> _cellList, List<Cell2DStruct> uk, float uk_delta, int size, float dx2, float alpha)
+	// 	{
+	// 		int listLength = _cellList.Count;
+
+	// 		if (uk == null)
+	// 		{
+	// 			uk = [];
+	// 			for (var i = 0; i < listLength; i++)
+	// 			{
+	// 				uk.Add(new Cell2DStruct());
+	// 			}
+	// 		}
+
+	// 		List<Cell2DStruct> dTdt_output = [];
+	// 		for (var i = 0; i < listLength; i++)
+	// 		{
+	// 			dTdt_output.Add(new Cell2DStruct());
+	// 		}
+
+	// 		for (int i = 0; i < listLength; i++)
+	// 		{
+	// 			float d2Tdx2 = 0;
+	// 			float d2Tdy2 = 0;
+
+	// 			d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
+	// 			d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
+	// 			d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
+	// 			d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
+
+	// 			d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
+	// 			d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
+
+	// 			dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
+	// 		}
+
+	// 		return dTdt_output;
+	// 	}
+
+	// 	// rk4计算
+	// 	// https://zhuanlan.zhihu.com/p/8616433050
+	// 	List<Cell2DStruct> rk4(List<Cell2DStruct> _cellList, float dt, int size, float dx2, float alpha)
+	// 	{
+	// 		int listLength = _cellList.Count;
+
+	// 		List<Cell2DStruct> T = [.. _cellList];
+
+	// 		var k1 = ComputeHeatEquation(_cellList, null, 0, size, dx2, alpha);
+	// 		var k2 = ComputeHeatEquation(_cellList, k1, delta / 2, size, dx2, alpha);
+	// 		var k3 = ComputeHeatEquation(_cellList, k2, delta / 2, size, dx2, alpha);
+	// 		var k4 = ComputeHeatEquation(_cellList, k3, delta, size, dx2, alpha);
+
+	// 		for (int i = 0; i < listLength; i++)
+	// 		{
+	// 			T[i].LocalTemp += dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
+	// 		}
+	// 		return T;
+	// 	}
+
+	// 	//新的
+	// 	convertCellList = rk4(convertCellList, delta, CellResolution, dx2, Alpha);
+
+	// 	for (var i = 0; i < CellList.Count; i++)
+	// 	{
+	// 		CellList[i].Temperature = convertCellList[i].LocalTemp;
+	// 	}
+	// }
+
+	// public void Calculate不知道()
+	// {
+	// 	float dx2 = 1.0f / ((CellResolution - 1) * (CellResolution - 1));
+	// 	List<Cell2DStruct> convertCellList = [];
+	// 	foreach (var cell in CellList)
+	// 		convertCellList.Add(new Cell2DStruct(cell));
+
+
+	// 	// 辅助函数，用于计算温度分布的导数
+	// 	List<Cell2DStruct> ComputeHeatEquation(List<Cell2DStruct> _cellList, List<Cell2DStruct> uk, float uk_delta, int size, float dx2, float alpha)
+	// 	{
+	// 		int listLength = _cellList.Count;
+
+	// 		if (uk == null)
+	// 		{
+	// 			uk = [];
+	// 			for (var i = 0; i < listLength; i++)
+	// 			{
+	// 				uk.Add(new Cell2DStruct());
+	// 			}
+	// 		}
+
+	// 		List<Cell2DStruct> dTdt_output = [];
+	// 		for (var i = 0; i < listLength; i++)
+	// 		{
+	// 			dTdt_output.Add(new Cell2DStruct());
+	// 		}
+
+	// 		for (int i = 0; i < listLength; i++)
+	// 		{
+	// 			float d2Tdx2 = 0;
+	// 			float d2Tdy2 = 0;
+
+	// 			d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
+	// 			d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
+	// 			d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
+	// 			d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
+
+	// 			d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
+	// 			d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
+
+	// 			dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
+	// 		}
+
+	// 		return dTdt_output;
+	// 	}
+
+	// 	// rk4计算
+	// 	// https://zhuanlan.zhihu.com/p/8616433050
+	// 	List<Cell2DStruct> rk4(List<Cell2DStruct> _cellList, float dt, int size, float dx2, float alpha)
+	// 	{
+	// 		int listLength = _cellList.Count;
+
+	// 		List<Cell2DStruct> T = [.. _cellList];
+
+	// 		var k1 = ComputeHeatEquation(_cellList, null, 0, size, dx2, alpha);
+	// 		var k2 = ComputeHeatEquation(_cellList, k1, delta / 2, size, dx2, alpha);
+	// 		var k3 = ComputeHeatEquation(_cellList, k2, delta / 2, size, dx2, alpha);
+	// 		var k4 = ComputeHeatEquation(_cellList, k3, delta, size, dx2, alpha);
+
+	// 		for (int i = 0; i < listLength; i++)
+	// 		{
+	// 			T[i].LocalTemp += dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
+	// 		}
+	// 		return T;
+	// 	}
+
+	// 	//新的
+	// 	convertCellList = rk4(convertCellList, delta, CellResolution, dx2, Alpha);
+
+	// 	for (var i = 0; i < CellList.Count; i++)
+	// 	{
+	// 		CellList[i].Temperature = convertCellList[i].LocalTemp;
+	// 	}
+	// }
+
 	public void Calculate()
 	{
-		float dx2 = 1.0f / ((CellResolution - 1) * (CellResolution - 1));
-		List<CellCalculateStruct> convertCellList = [];
-		foreach (var cell in CellList)
-			convertCellList.Add(new CellCalculateStruct(cell));
-
-
-		// 辅助函数，用于计算温度分布的导数
-		List<CellCalculateStruct> ComputeHeatEquation(List<CellCalculateStruct> _cellList, List<CellCalculateStruct> uk, float uk_delta, int size, float dx2, float alpha)
+		for (int i = 0; i < CellList.Count; i++)
 		{
-			int listLength = _cellList.Count;
+			float leftT = CellIndexList[CellIndexList[i].index.Z].temperature;
+			float rightT = CellIndexList[CellIndexList[i].index.W].temperature;
+			float upT = CellIndexList[CellIndexList[i].index.X].temperature;
+			float downT = CellIndexList[CellIndexList[i].index.Y].temperature;
+			float localT = CellIndexList[i].temperature;
+			float deltaT = 0;
 
-			if (uk == null)
+			deltaT += (leftT - localT) * Conductivity;
+			deltaT += (rightT - localT) * Conductivity;
+			deltaT += (upT - localT) * Conductivity;
+			deltaT += (downT - localT) * Conductivity;
+
+			CellIndexList[i].temperature += deltaT;
+
+			if (Randf() < 0.000001)
 			{
-				uk = [];
-				for (var i = 0; i < listLength; i++)
-				{
-					uk.Add(new CellCalculateStruct());
-				}
+				if (Randf() <= 0.5)
+					CellIndexList[i].temperature = -1000;
+				else
+					CellIndexList[i].temperature = 1000;
 			}
 
-			List<CellCalculateStruct> dTdt_output = [];
-			for (var i = 0; i < listLength; i++)
-			{
-				dTdt_output.Add(new CellCalculateStruct());
-			}
-
-			for (int i = 0; i < listLength; i++)
-			{
-				float d2Tdx2 = 0;
-				float d2Tdy2 = 0;
-
-				d2Tdx2 += _cellList[i].UpTemp + uk[i].UpTemp * uk_delta;
-				d2Tdx2 += _cellList[i].DownTemp + uk[i].DownTemp * uk_delta;
-				d2Tdy2 += _cellList[i].LeftTemp + uk[i].LeftTemp * uk_delta;
-				d2Tdy2 += _cellList[i].RightTemp + uk[i].RightTemp * uk_delta;
-
-				d2Tdx2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-				d2Tdy2 -= 2 * (_cellList[i].LocalTemp + (uk[i].LocalTemp * uk_delta));
-
-				dTdt_output[i].LocalTemp = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2));
-			}
-
-			return dTdt_output;
-		}
-
-		// rk4计算
-		// https://zhuanlan.zhihu.com/p/8616433050
-		List<CellCalculateStruct> rk4(List<CellCalculateStruct> _cellList, float dt, int size, float dx2, float alpha)
-		{
-			int listLength = _cellList.Count;
-
-			List<CellCalculateStruct> T = [.. _cellList];
-
-			var k1 = ComputeHeatEquation(_cellList, null, 0, size, dx2, alpha);
-			var k2 = ComputeHeatEquation(_cellList, k1, delta / 2, size, dx2, alpha);
-			var k3 = ComputeHeatEquation(_cellList, k2, delta / 2, size, dx2, alpha);
-			var k4 = ComputeHeatEquation(_cellList, k3, delta, size, dx2, alpha);
-
-			for (int i = 0; i < listLength; i++)
-			{
-				T[i].LocalTemp += dt / 6 * (k1[i].LocalTemp + 2 * k2[i].LocalTemp + 2 * k3[i].LocalTemp + k4[i].LocalTemp);
-			}
-			return T;
-		}
-
-		//新的
-		convertCellList = rk4(convertCellList, delta, CellResolution, dx2, Alpha);
-
-		for (var i = 0; i < CellList.Count; i++)
-		{
-			CellList[i].Temperature = convertCellList[i].LocalTemp;
 		}
 	}
 
-	public class CellCalculateStruct
+	public class Cell2DStruct
 	{
 		public float LocalTemp = 0;
 		public float UpTemp = 0;
@@ -517,7 +691,7 @@ public partial class Controller2D : Node2D
 		public float LeftTemp = 0;
 		public float RightTemp = 0;
 
-		public CellCalculateStruct(Cell2D cell)
+		public Cell2DStruct(Cell2D cell)
 		{
 			LocalTemp = cell.Temperature;
 			UpTemp = cell.up.Temperature;
@@ -526,7 +700,24 @@ public partial class Controller2D : Node2D
 			RightTemp = cell.right.Temperature;
 		}
 
-		public CellCalculateStruct() { }
+		public Cell2DStruct() { }
+	}
+
+	public class CellIndex
+	{
+		public float temperature
+		{
+			get { return cell.Temperature; }
+			set { cell.Temperature = value; }
+		}
+		public Cell2D cell;
+		public Vector4I index;
+		public CellIndex(float t, int up, int down, int left, int right, Cell2D cell)
+		{
+			this.cell = cell;
+			index = new(up, down, left, right);
+			temperature = t;
+		}
 	}
 
 	public class Cell2D
