@@ -8,7 +8,7 @@ public partial class Controller : Node
     [Export] PackedScene cellScene;
     MeshInstance3D cellPrefab;
 
-    [Export] float cellSize = 0.1f;
+    [Export] float CellSize = 0.1f;
     [Export] int Width = 100;
     [Export] int Height = 100;
     [Export] double Alpha = 1e-5;
@@ -40,8 +40,8 @@ public partial class Controller : Node
             {
                 MeshInstance3D cell = cellPrefab.Duplicate() as MeshInstance3D;
                 AddChild(cell);
-                cell.Scale = new Vector3(cellSize, cellSize, cellSize);
-                cell.Position = new Vector3(x * cellSize, 0, y * cellSize);
+                cell.Scale = new Vector3(CellSize, CellSize, CellSize);
+                cell.Position = new Vector3(x * CellSize, 0, y * CellSize);
                 cells[x, y] = cell as Cell;
             }
         }
