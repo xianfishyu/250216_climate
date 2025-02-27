@@ -41,8 +41,8 @@ public class TemperatureCalculator(int width, int height, double alpha)
                     if (y == 0) d2Tdy2 += cells[x, height - 1] + uk[x, height - 1] * uk_delta;
                     if (y == height - 1) d2Tdy2 += cells[x, 0] + uk[x, 0] * uk_delta;
 
-                    d2Tdx2 -= 2 * (cells[x, y] + uk[x, y] * uk_delta);
-                    d2Tdy2 -= 2 * (cells[x, y] + uk[x, y] * uk_delta);
+                    d2Tdx2 -= 2 * (cells[x, y] + (uk[x, y] * uk_delta));
+                    d2Tdy2 -= 2 * (cells[x, y] + (uk[x, y] * uk_delta));
                     
 
                     dTdt[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
@@ -56,16 +56,7 @@ public class TemperatureCalculator(int width, int height, double alpha)
         // https://zhuanlan.zhihu.com/p/8616433050
         double[,] rk4(double[,] cells, double dt, int width, int height, double dx2, double alpha)
         {
-            var T = new double[width, height];
-
-            // 处理内部
-            for (var x = 0; x < width; x++)
-            {
-                for (var y = 0; y < height; y++)
-                {
-                    T[x, y] = cells[x, y];
-                }
-            }
+            var T = (double[,])cells.Clone();
 
             // 时间积分：使用 Runge-Kutta 方法
             // 计算k1234
@@ -87,17 +78,9 @@ public class TemperatureCalculator(int width, int height, double alpha)
         }
 
         // 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
-        var cellsUpdate = Cells;
-        var tNew = rk4(Cells, delta, Width, Height, dx2, Alpha);
+        Cells = rk4(Cells, delta, Width, Height, dx2, Alpha);
         CellsDerivative = ComputeHeatEquation(Cells, null, 0, Width, Height, dx2, Alpha);
         
-        for (var x = 0; x < Width; x++)
-        {
-            for (var y = 0; y < Height; y++)
-            {
-                cellsUpdate[x, y] = (float)tNew[x, y];
-            }
-        }
         
         // 距平值计算
         for (var x = 0; x < Width; x++) 
@@ -119,8 +102,6 @@ public class TemperatureCalculator(int width, int height, double alpha)
     
         if(_averageCount < 1000)
             _averageCount ++;
-        
-        Cells = cellsUpdate;
     }
     
     public void ClearCells()
