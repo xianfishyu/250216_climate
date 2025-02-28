@@ -23,14 +23,14 @@ public partial class Controller2D : Node2D
 
 
 	[ExportCategory("CellsSettings")]
-	[Export(PropertyHint.Range, "20,1000,20,or_greater,or_less")] private int CellResolution = 100;
+	[Export(PropertyHint.Range, "32,1024,32,or_greater,or_less")] private int CellResolution = 128;
 	[Export] private float Conductivity = 0.1f;
 
 	[ExportCategory("TextureSettings")]
 	[Export] private PackedScene ChunkPrefab;
 	private TextureRect TextureRect;
-	[Export] private float CellSize = 1f;
-	[Export(PropertyHint.Range, "10,1000,10,or_greater,or_less")] private int TextureResolution = 100;
+	[Export] private float RectSize = 100f;
+	[Export(PropertyHint.Range, "16,1024,16,or_greater,or_less")] private int TextureResolution = 128;
 
 	[Export] private Timer Timer;
 
@@ -151,7 +151,7 @@ public partial class Controller2D : Node2D
 		long computeList = RD.ComputeListBegin();
 		RD.ComputeListBindComputePipeline(computeList, ComputePipeline);
 		RD.ComputeListBindUniformSet(computeList, UniformSet, 0);
-		RD.ComputeListDispatch(computeList, xGroups: (uint)CellResolution / 20, (uint)CellResolution / 20, zGroups: 6);
+		RD.ComputeListDispatch(computeList, xGroups: (uint)CellResolution / 32, (uint)CellResolution / 32, zGroups: 6);
 		RD.ComputeListEnd();
 		RD.Submit();
 		RD.Sync();
@@ -231,24 +231,24 @@ public partial class Controller2D : Node2D
 		foreach (Chunk chunk in Chunks.Values)
 		{
 			TextureRect rect = TextureRect.Duplicate() as TextureRect;
-			rect.Size = new Vector2(CellResolution * CellSize, CellResolution * CellSize);
+			rect.Size = new Vector2(RectSize, RectSize);
 			AddChild(rect);
 			chunk.textureRect = rect;
 
 			chunk.TextureUpdate();
 
 			if (chunk.toward == Toward.Up)
-				rect.Position = new(0, -CellResolution * CellSize);
+				rect.Position = new(0, -RectSize);
 			else if (chunk.toward == Toward.Down)
-				rect.Position = new(0, CellResolution * CellSize);
+				rect.Position = new(0, RectSize);
 			else if (chunk.toward == Toward.Left)
-				rect.Position = new(-CellResolution * CellSize, 0);
+				rect.Position = new(-RectSize, 0);
 			else if (chunk.toward == Toward.Right)
-				rect.Position = new(CellResolution * CellSize, 0);
+				rect.Position = new(RectSize, 0);
 			else if (chunk.toward == Toward.Forward)
 				rect.Position = new(0, 0);
 			else if (chunk.toward == Toward.Back)
-				rect.Position = new(CellResolution * CellSize * 2, 0);
+				rect.Position = new(RectSize * 2, 0);
 		}
 	}
 
@@ -343,8 +343,8 @@ public partial class Controller2D : Node2D
 		public void SetTemperature()
 		{
 			// Temperature = 10;
-			// Temperature = RandRange(-100, 100);
-			Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
+			Temperature = RandRange(-100, 100);
+			// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
 			// Temperature = GeoCoordinate.X * 57.3f;
 			// Temperature = GeoCoordinate.Y * 20f;
 			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
@@ -385,7 +385,7 @@ public partial class Controller2D : Node2D
 
 		public void TextureUpdate()
 		{
-			//显然,这里的取整有bug,不过只要限定纹理是10的倍数就好了,只要不是质数就丢弃不了多少
+			//显然,这里的取整有bug,不过只要限定纹理是2的倍数就好了,只要不是质数就丢弃不了多少
 
 			if (textureImage == null)
 				textureImage = Image.CreateEmpty(textureResolution, textureResolution, false, Image.Format.Rgb8);
@@ -393,16 +393,14 @@ public partial class Controller2D : Node2D
 				textureImage = Image.CreateEmpty(textureResolution, textureResolution, false, Image.Format.Rgb8);
 
 			int scaleFactor = (int)MathF.Ceiling(CellResolution / textureResolution);
-			
-			int step = Math.Max(1, scaleFactor - 1);
 
 			for (var x = 0; x < textureResolution; x++)
 				for (var y = 0; y < textureResolution; y++)
 				{
 					float sigmaT = 0;
 
-					for (var i = 0; i < step; i++)
-						for (var j = 0; j < step; j++)
+					for (var i = 0; i < scaleFactor; i++)
+						for (var j = 0; j < scaleFactor; j++)
 							sigmaT += Cells[x * scaleFactor + i, y * scaleFactor + j].Temperature;
 
 					float newT = sigmaT / scaleFactor / scaleFactor;

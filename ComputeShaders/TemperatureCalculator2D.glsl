@@ -4,7 +4,7 @@
 
 #version 450
 
-layout(local_size_x=20,local_size_y=20,local_size_z=1)in;
+layout(local_size_x=32,local_size_y=32,local_size_z=1)in;
 
 layout(set=0,binding=0,std430)buffer LocalTemp{
     float data[];
@@ -26,8 +26,6 @@ void main()
     gl_GlobalInvocationID.y*(gl_NumWorkGroups.x*gl_WorkGroupSize.x)+
     gl_GlobalInvocationID.z*(gl_NumWorkGroups.x*gl_WorkGroupSize.x)*
     (gl_NumWorkGroups.y*gl_WorkGroupSize.y);
-    
-    // if(id>=buffer_info.bufferSize)return;
     
     float deltaT=0.;
     
