@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Godot.GD;
+using static Tool;
 
 // [Tool]
 public partial class Controller2D : Node2D
@@ -22,14 +23,14 @@ public partial class Controller2D : Node2D
 
 
 	[ExportCategory("CellsSettings")]
-	[Export(PropertyHint.Range, "30,1200,30,or_greater,or_less")] private int CellResolution = 120;
+	[Export(PropertyHint.Range, "20,1000,20,or_greater,or_less")] private int CellResolution = 100;
 	[Export] private float Conductivity = 0.1f;
 
 	[ExportCategory("TextureSettings")]
 	[Export] private PackedScene ChunkPrefab;
 	private TextureRect TextureRect;
 	[Export] private float CellSize = 1f;
-	private Image Image;
+	[Export(PropertyHint.Range, "10,1000,10,or_greater,or_less")] private int TextureResolution = 100;
 
 	[Export] private Timer Timer;
 
@@ -70,52 +71,6 @@ public partial class Controller2D : Node2D
 				ComputeShaderReady(CellIndexList);
 			}
 		}
-	}
-
-	private Color GetHeatColor_H_OutOfRange(float temperature)
-	{
-		float range = Mathf.Abs(HotThreshold - ColdThreshold);
-		float t = Mathf.Abs(temperature - ColdThreshold) / range * (240f / 359f);
-		Color color = new(1, 0, 0);
-		color.H = t;
-		return color;
-	}
-
-	private Color GetHeatColor_H(float temperature)
-	{
-		if (temperature < ColdThreshold)
-			temperature = ColdThreshold;
-		else if (temperature > HotThreshold)
-			temperature = HotThreshold;
-		float range = Mathf.Abs(HotThreshold - ColdThreshold);
-		float t = Mathf.Abs(temperature - HotThreshold) / range * (240f / 359f);
-		Color color = new(1, 0, 0);
-		color.H = t;
-		return color;
-	}
-
-	private Color GetHeatColor_S(float temperature)
-	{
-		if (temperature < ColdThreshold)
-			return ColdColor;
-		else if (temperature < ZeroThreshold)
-		{
-			float t = Mathf.Abs(temperature - ColdThreshold) / Mathf.Abs(ZeroThreshold - ColdThreshold);
-			Color color = ColdColor;
-			color.S = 1 - t;
-			return color;
-		}
-		else if (temperature == ZeroThreshold)
-			return Colors.White;
-		else if (temperature < HotThreshold)
-		{
-			float t = Mathf.Abs(temperature - HotThreshold) / Mathf.Abs(ZeroThreshold - HotThreshold);
-			Color color = HotColor;
-			color.S = 1 - t;
-			return color;
-		}
-		else
-			return HotColor;
 	}
 
 	private void ComputeShaderReady(List<CellIndex> cellIndexList)
@@ -196,7 +151,7 @@ public partial class Controller2D : Node2D
 		long computeList = RD.ComputeListBegin();
 		RD.ComputeListBindComputePipeline(computeList, ComputePipeline);
 		RD.ComputeListBindUniformSet(computeList, UniformSet, 0);
-		RD.ComputeListDispatch(computeList, xGroups: (uint)CellResolution / 30, (uint)CellResolution / 30, zGroups: 6);
+		RD.ComputeListDispatch(computeList, xGroups: (uint)CellResolution / 20, (uint)CellResolution / 20, zGroups: 6);
 		RD.ComputeListEnd();
 		RD.Submit();
 		RD.Sync();
@@ -214,12 +169,12 @@ public partial class Controller2D : Node2D
 		Chunks.Clear();
 		CellIndexList.Clear();
 
-		Chunks.Add("Up", new(Toward.Up, CellResolution));
-		Chunks.Add("Down", new(Toward.Down, CellResolution));
-		Chunks.Add("Left", new(Toward.Left, CellResolution));
-		Chunks.Add("Right", new(Toward.Right, CellResolution));
-		Chunks.Add("Forward", new(Toward.Forward, CellResolution));
-		Chunks.Add("Back", new(Toward.Back, CellResolution));
+		Chunks.Add("Up", new(Toward.Up, CellResolution, TextureResolution));
+		Chunks.Add("Down", new(Toward.Down, CellResolution, TextureResolution));
+		Chunks.Add("Left", new(Toward.Left, CellResolution, TextureResolution));
+		Chunks.Add("Right", new(Toward.Right, CellResolution, TextureResolution));
+		Chunks.Add("Forward", new(Toward.Forward, CellResolution, TextureResolution));
+		Chunks.Add("Back", new(Toward.Back, CellResolution, TextureResolution));
 
 		Chunks["Up"].LeftNeighbor = Chunks["Left"];
 		Chunks["Up"].RightNeighbor = Chunks["Right"];
@@ -252,6 +207,9 @@ public partial class Controller2D : Node2D
 		Chunks["Back"].UpNeighbor = Chunks["Up"];
 		Chunks["Back"].DownNeighbor = Chunks["Down"];
 
+		Chunk.topT = HotThreshold;
+		Chunk.bottomT = ColdThreshold;
+
 		foreach (Chunk chunk in Chunks.Values)
 			chunk.SetNodeList();
 
@@ -264,22 +222,20 @@ public partial class Controller2D : Node2D
 
 	private void TextureReady()
 	{
+		if (TextureResolution > CellResolution)
+		{
+			Print("Controller2D/TextureReady:你的纹理分辨率比网格分辨率高!已设置为网格分辨率,不服打我啊");
+			TextureResolution = CellResolution;
+		}
+
 		foreach (Chunk chunk in Chunks.Values)
 		{
-			Image image = Image.CreateEmpty(CellResolution, CellResolution, false, Image.Format.Rgb8);
-			for (int i = 0; i < chunk.Cells.GetLength(0); i++)
-			{
-				for (int j = 0; j < chunk.Cells.GetLength(1); j++)
-				{
-					image.SetPixel(i, j, GetHeatColor_H(chunk.Cells[i, j].Temperature));
-				}
-			}
-
 			TextureRect rect = TextureRect.Duplicate() as TextureRect;
 			rect.Size = new Vector2(CellResolution * CellSize, CellResolution * CellSize);
-			rect.Texture = ImageTexture.CreateFromImage(image);
 			AddChild(rect);
 			chunk.textureRect = rect;
+
+			chunk.TextureUpdate();
 
 			if (chunk.toward == Toward.Up)
 				rect.Position = new(0, -CellResolution * CellSize);
@@ -299,17 +255,7 @@ public partial class Controller2D : Node2D
 	private void TextureUpdate()
 	{
 		foreach (Chunk chunk in Chunks.Values)
-		{
-			Image image = Image.CreateEmpty(CellResolution, CellResolution, false, Image.Format.Rgb8);
-			for (int i = 0; i < chunk.Cells.GetLength(0); i++)
-			{
-				for (int j = 0; j < chunk.Cells.GetLength(1); j++)
-				{
-					image.SetPixel(i, j, GetHeatColor_H(chunk.Cells[i, j].Temperature));
-				}
-			}
-			chunk.textureRect.Texture = ImageTexture.CreateFromImage(image);
-		}
+			chunk.TextureUpdate();
 	}
 
 	private static List<CellIndex> SetIndexList(Dictionary<string, Chunk> chunks)
@@ -422,13 +368,49 @@ public partial class Controller2D : Node2D
 		public Chunk DownNeighbor;
 
 		public TextureRect textureRect;
+		public Image textureImage;
+		public int textureResolution;
 
-		public Chunk(Vector3 _toward, int _cellResolution)
+		public static float topT;
+		public static float bottomT;
+
+		public Chunk(Vector3 _toward, int _cellResolution, int _textureResolution)
 		{
 			toward = _toward;
 			CellResolution = _cellResolution;
 			Cells = new Cell2D[CellResolution, CellResolution];
+			textureResolution = _textureResolution;
 			GenerateCells();
+		}
+
+		public void TextureUpdate()
+		{
+			//显然,这里的取整有bug,不过只要限定纹理是10的倍数就好了,只要不是质数就丢弃不了多少
+
+			if (textureImage == null)
+				textureImage = Image.CreateEmpty(textureResolution, textureResolution, false, Image.Format.Rgb8);
+			if (textureImage.GetSize() != new Vector2I(textureResolution, textureResolution))
+				textureImage = Image.CreateEmpty(textureResolution, textureResolution, false, Image.Format.Rgb8);
+
+			int scaleFactor = (int)MathF.Ceiling(CellResolution / textureResolution);
+			
+			int step = Math.Max(1, scaleFactor - 1);
+
+			for (var x = 0; x < textureResolution; x++)
+				for (var y = 0; y < textureResolution; y++)
+				{
+					float sigmaT = 0;
+
+					for (var i = 0; i < step; i++)
+						for (var j = 0; j < step; j++)
+							sigmaT += Cells[x * scaleFactor + i, y * scaleFactor + j].Temperature;
+
+					float newT = sigmaT / scaleFactor / scaleFactor;
+
+					textureImage.SetPixel(x, y, GetHeatColor_H(newT, topT, bottomT));
+				}
+
+			textureRect.Texture = ImageTexture.CreateFromImage(textureImage);
 		}
 
 		public void SetNeighbor(Chunk _LeftNeighbor, Chunk _RightNeighbor, Chunk _UpNeighbor, Chunk _DownNeighbor)
@@ -631,16 +613,17 @@ public partial class Controller2D : Node2D
 				Print("Chunk/Calculate:???你的toward哪去了?");
 
 		}
+
 	}
 
-}
+	public struct Toward
+	{
+		public static readonly Vector3 Up = Vector3.Up;
+		public static readonly Vector3 Down = Vector3.Down;
+		public static readonly Vector3 Left = Vector3.Left;
+		public static readonly Vector3 Right = Vector3.Right;
+		public static readonly Vector3 Forward = Vector3.Forward;
+		public static readonly Vector3 Back = Vector3.Back;
+	}
 
-public struct Toward
-{
-	public static readonly Vector3 Up = Vector3.Up;
-	public static readonly Vector3 Down = Vector3.Down;
-	public static readonly Vector3 Left = Vector3.Left;
-	public static readonly Vector3 Right = Vector3.Right;
-	public static readonly Vector3 Forward = Vector3.Forward;
-	public static readonly Vector3 Back = Vector3.Back;
 }
