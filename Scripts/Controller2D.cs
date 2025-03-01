@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using static Godot.GD;
 using static Tool;
 
@@ -11,6 +12,8 @@ public partial class Controller2D : Node2D
 	private Dictionary<string, Chunk> Chunks = new();
 	private List<CellIndex> CellIndexList = new();
 	private float[] LocalTList;
+
+	private static ColorMpping colorMpping;
 
 	[ExportCategory("ComputeShaderSettings")]
 	[Export] private string ComputeShaderPath;
@@ -23,14 +26,16 @@ public partial class Controller2D : Node2D
 
 
 	[ExportCategory("CellsSettings")]
-	[Export(PropertyHint.Range, "32,1024,32,or_greater,or_less")] private int CellResolution = 128;
+	[Export(PropertyHint.Range, "32,1024,32,or_greater,or_less")] 
+	private int CellResolution = 128;
 	[Export] private float Conductivity = 0.1f;
 
 	[ExportCategory("TextureSettings")]
 	[Export] private PackedScene ChunkPrefab;
 	private TextureRect TextureRect;
 	[Export] private float RectSize = 100f;
-	[Export(PropertyHint.Range, "16,1024,16,or_greater,or_less")] private int TextureResolution = 128;
+	[Export(PropertyHint.Range, "16,1024,16,or_greater,or_less")] 
+	private int TextureResolution = 128;
 
 	[Export] private Timer Timer;
 
@@ -52,12 +57,12 @@ public partial class Controller2D : Node2D
 		ComputeShaderReady(CellIndexList);
 
 		Timer.Timeout += Calculate;
-		Timer.Timeout += TextureUpdate;
 		Timer.Timeout += ComputeShaderCal;
 	}
 
-	public override void _PhysicsProcess(double delta)
+	public override void _Process(double delta)
 	{
+		TextureUpdate();
 	}
 
 	public override void _Input(InputEvent @event)
@@ -75,6 +80,8 @@ public partial class Controller2D : Node2D
 
 	private void ComputeShaderReady(List<CellIndex> cellIndexList)
 	{
+		GroupSize  = (uint)CellResolution / 32;
+		Print(GroupSize);
 		//加载着色器
 		RD = RenderingServer.CreateLocalRenderingDevice();
 
@@ -144,6 +151,7 @@ public partial class Controller2D : Node2D
 
 	}
 
+	private uint GroupSize;
 	private void ComputeShaderCal()
 	{
 		// 创建计算管线
@@ -151,7 +159,7 @@ public partial class Controller2D : Node2D
 		long computeList = RD.ComputeListBegin();
 		RD.ComputeListBindComputePipeline(computeList, ComputePipeline);
 		RD.ComputeListBindUniformSet(computeList, UniformSet, 0);
-		RD.ComputeListDispatch(computeList, xGroups: (uint)CellResolution / 32, (uint)CellResolution / 32, zGroups: 6);
+		RD.ComputeListDispatch(computeList,  GroupSize, GroupSize, zGroups: 6);
 		RD.ComputeListEnd();
 		RD.Submit();
 		RD.Sync();
@@ -207,9 +215,6 @@ public partial class Controller2D : Node2D
 		Chunks["Back"].UpNeighbor = Chunks["Up"];
 		Chunks["Back"].DownNeighbor = Chunks["Down"];
 
-		Chunk.topT = HotThreshold;
-		Chunk.bottomT = ColdThreshold;
-
 		foreach (Chunk chunk in Chunks.Values)
 			chunk.SetNodeList();
 
@@ -222,11 +227,10 @@ public partial class Controller2D : Node2D
 
 	private void TextureReady()
 	{
+		colorMpping = new(HotThreshold, ZeroThreshold, ColdThreshold, HotColor, ColdColor);
+
 		if (TextureResolution > CellResolution)
-		{
-			Print("Controller2D/TextureReady:你的纹理分辨率比网格分辨率高!已设置为网格分辨率,不服打我啊");
-			TextureResolution = CellResolution;
-		}
+		Print("Controller2D/Chunk/TextureResolution:你的纹理分辨率比网格分辨率高!已设置为网格分辨率,不服打我啊");
 
 		foreach (Chunk chunk in Chunks.Values)
 		{
@@ -254,8 +258,13 @@ public partial class Controller2D : Node2D
 
 	private void TextureUpdate()
 	{
+		colorMpping = new(HotThreshold, ZeroThreshold, ColdThreshold, HotColor, ColdColor);
+
 		foreach (Chunk chunk in Chunks.Values)
+		{
+			chunk.TextureResolution = TextureResolution;
 			chunk.TextureUpdate();
+		}
 	}
 
 	private static List<CellIndex> SetIndexList(Dictionary<string, Chunk> chunks)
@@ -349,8 +358,12 @@ public partial class Controller2D : Node2D
 			// Temperature = GeoCoordinate.Y * 20f;
 			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
 			// 	Temperature = 100;
-			// else if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
+			// else
 			// 	Temperature = -100;
+			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
+			// 	Temperature = -100;
+			// else
+			// 	Temperature= 100;
 			// else
 			// 	Temperature = 0;
 		}
@@ -369,17 +382,29 @@ public partial class Controller2D : Node2D
 
 		public TextureRect textureRect;
 		public Image textureImage;
-		public int textureResolution;
 
-		public static float topT;
-		public static float bottomT;
+		public int TextureResolution
+		{
+			get => textureResolution;
+			set
+			{
+				if (value > CellResolution)
+				{
+					textureResolution = CellResolution;
+				}
+
+				else
+					textureResolution = value;
+			}
+		}
+		private int textureResolution;
 
 		public Chunk(Vector3 _toward, int _cellResolution, int _textureResolution)
 		{
 			toward = _toward;
 			CellResolution = _cellResolution;
 			Cells = new Cell2D[CellResolution, CellResolution];
-			textureResolution = _textureResolution;
+			TextureResolution = _textureResolution;
 			GenerateCells();
 		}
 
@@ -388,14 +413,14 @@ public partial class Controller2D : Node2D
 			//显然,这里的取整有bug,不过只要限定纹理是2的倍数就好了,只要不是质数就丢弃不了多少
 
 			if (textureImage == null)
-				textureImage = Image.CreateEmpty(textureResolution, textureResolution, false, Image.Format.Rgb8);
-			if (textureImage.GetSize() != new Vector2I(textureResolution, textureResolution))
-				textureImage = Image.CreateEmpty(textureResolution, textureResolution, false, Image.Format.Rgb8);
+				textureImage = Image.CreateEmpty(TextureResolution, TextureResolution, false, Image.Format.Rgb8);
+			if (textureImage.GetSize() != new Vector2I(TextureResolution, TextureResolution))
+				textureImage = Image.CreateEmpty(TextureResolution, TextureResolution, false, Image.Format.Rgb8);
 
-			int scaleFactor = (int)MathF.Ceiling(CellResolution / textureResolution);
+			int scaleFactor = (int)MathF.Ceiling(CellResolution / TextureResolution);
 
-			for (var x = 0; x < textureResolution; x++)
-				for (var y = 0; y < textureResolution; y++)
+			for (var x = 0; x < TextureResolution; x++)
+				for (var y = 0; y < TextureResolution; y++)
 				{
 					float sigmaT = 0;
 
@@ -405,7 +430,7 @@ public partial class Controller2D : Node2D
 
 					float newT = sigmaT / scaleFactor / scaleFactor;
 
-					textureImage.SetPixel(x, y, GetHeatColor_H(newT, topT, bottomT));
+					textureImage.SetPixel(x, y, colorMpping.GetHeatColor_H_OutOfRange(newT));
 				}
 
 			textureRect.Texture = ImageTexture.CreateFromImage(textureImage);
