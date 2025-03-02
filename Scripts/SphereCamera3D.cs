@@ -61,24 +61,7 @@ public partial class SphereCamera3D : Camera3D
 		//你是看不懂这段代码的
 		if (Input.IsMouseButtonPressed(MouseButton.Left))
 		{
-			// Vector3 Vxz = new Vector3(Position.X, 0, Position.Z).Normalized();
-			// Vector3 Nor = Vxz.Cross(Vector3.Down).Normalized();
-			// Quaternion quaternion = Quaternion.FromEuler(new Vector3
-			// (Nor.X * deltaPos.Y * (CameraScale - 0.8f) / 1000, deltaPos.X * (CameraScale - 0.8f) / 1000, Nor.Z * deltaPos.Y * (CameraScale - 0.8f) / 1000));
-
-			// Vector3 newPos = (quaternion * Position.Normalized()).Normalized();
-			// float r = Position.Length() / Position.Normalized().Length();
-
-			// if (new Vector2(newPos.X, newPos.Z).Length() < 0.3f)
-			// {
-			// 	Quaternion reverse = Quaternion.FromEuler(Nor * 0.01f);
-			// 	newPos = -reverse * newPos;
-			// }
-			// Position = newPos * r;
-
 			CameraGeoCoord -= deltaPos / Mathf.Tau / 100 * (CameraScale -0.9f);
-			Print(CameraGeoCoord);
-
 		}
 	}
 
