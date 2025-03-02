@@ -1,21 +1,20 @@
 using static Godot.GD;
 namespace _Climate.Scripts;
 
-public class TemperatureCalculator(int width, int height, double alpha)
+public class TemperatureCalculator(int length, double alpha)
 {
-	public readonly int Width = width;
-	public readonly int Height = height;
+	public readonly int Length = length;
 	public readonly double Alpha = alpha;
-	public double[,] Cells = new double[width, height];
-	public double[,] CellsDerivative = new double[width, height];  // 变温分布
-	public double[,] CellsAnomaly = new double[width, height];  // 气温距平分布
-	private double[,] _cellsAverage = new double[width, height];  // 平均值
+	public double[,] Cells = new double[length, length];
+	public double[,] CellsDerivative = new double[length, length];  // 变温分布
+	public double[,] CellsAnomaly = new double[length, length];  // 气温距平分布
+	private double[,] _cellsAverage = new double[length, length];  // 平均值
 	private uint _averageCount = 0;
 	
 	
 	public void Calculate(double delta)
 	{
-		var dx2 = 1.0 / ((Width - 1) * (Height - 1));
+		var dx2 = 1.0 / ((length - 1) * (length - 1));
 
 		// 辅助函数，用于计算温度分布的导数
 		double[,] ComputeHeatEquation(double[,] cells, double[,] uk, double uk_delta, int width, int height, double dx2, double alpha)
@@ -78,23 +77,23 @@ public class TemperatureCalculator(int width, int height, double alpha)
 		}
 
 		// 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
-		Cells = rk4(Cells, delta, Width, Height, dx2, Alpha);
-		CellsDerivative = ComputeHeatEquation(Cells, null, 0, Width, Height, dx2, Alpha);
+		Cells = rk4(Cells, delta, Length, Length, dx2, Alpha);
+		CellsDerivative = ComputeHeatEquation(Cells, null, 0, Length, Length, dx2, Alpha);
 		
 		
 		// 距平值计算
-		for (var x = 0; x < Width; x++) 
+		for (var x = 0; x < Length; x++) 
 		{
-			for (var y = 0; y < Height; y++)
+			for (var y = 0; y < Length; y++)
 			{
 				_cellsAverage[x, y] += (Cells[x, y] - _cellsAverage[x, y]) / (_averageCount + 1);
 			}
 		}
 
 		// 单元格的距平值
-		for (var x = 0; x < Width; x++)
+		for (var x = 0; x < Length; x++)
 		{
-			for (var y = 0; y < Height; y++)
+			for (var y = 0; y < Length; y++)
 			{
 				CellsAnomaly[x, y] = Cells[x, y] - _cellsAverage[x, y];
 			}
@@ -106,9 +105,9 @@ public class TemperatureCalculator(int width, int height, double alpha)
 	
 	public void ClearCells()
 	{
-		for (var x = 0; x < Width; x++)
+		for (var x = 0; x < Length; x++)
 		{
-			for (var y = 0; y < Height; y++)
+			for (var y = 0; y < Length; y++)
 			{
 				Cells[x, y] = 0;
 				// CellsDerivative[x, y] = 0;
