@@ -10,10 +10,7 @@ public partial class Controller : Node
 
 	[Export] float CellSize = 0.1f;
 	[Export] int Length = 50;
-	// [Export] int Width = 20;
-	// [Export] int Height = 20;
 	[Export] double Alpha = 1e-4;
-	//Cell[,,] cells_left, cells_front, cells_right, cells_back, cells_top, cells_button;
 	Cell[,,] cells;
 
 	// 温度分布图，变温分布图，气温距平分布图
@@ -28,11 +25,11 @@ public partial class Controller : Node
 	private MapType _mapType = MapType.TemperatureDistribution;
 
 
-	TemperatureCalculator _temperatureCalculator;
+	TemperatureCalculator _tempTop;
 
 	public override void _Ready()
 	{
-		_temperatureCalculator = new TemperatureCalculator(Length, Alpha);
+		_tempTop = new TemperatureCalculator(Length, Alpha, _tempTop, _tempTop, _tempTop, _tempTop);
 		
 		cells = new Cell[Length, Length, Length];
 		cellPrefab = cellScene.Instantiate<MeshInstance3D>();
@@ -64,7 +61,7 @@ public partial class Controller : Node
 
 	public override void _Process(double delta)
 	{
-		_temperatureCalculator.Calculate(delta);
+		_tempTop.Calculate(delta);
 
 		// 随机生成温度
 		if (Randf() < 0.1)
@@ -72,17 +69,17 @@ public partial class Controller : Node
 			// cellCalculator.cells[RandRange(0, cellCalculator.width - 1), RandRange(0, cellCalculator.height - 1)]
 			//     .Temperature = RandRange(-10, 255);
 			var radius = RandRange(1, 10);
-			var width = RandRange(radius, _temperatureCalculator.Length - radius);
-			var height = RandRange(radius, _temperatureCalculator.Length - radius);
+			var width = RandRange(radius, _tempTop.Length - radius);
+			var height = RandRange(radius, _tempTop.Length - radius);
 			var temperature = RandRange(-100, 100);
 
-			for (var x = 0; x < _temperatureCalculator.Length; x++)
+			for (var x = 0; x < _tempTop.Length; x++)
 			{
-				for (var y = 0; y < _temperatureCalculator.Length; y++)
+				for (var y = 0; y < _tempTop.Length; y++)
 				{
 					if (Mathf.Pow(x - width, 2) + Mathf.Pow(y - height, 2) < radius)
 					{
-						_temperatureCalculator.Cells[x, y] = temperature;
+						_tempTop.Cells[x, y] = temperature;
 					}
 				}
 			}
@@ -91,42 +88,36 @@ public partial class Controller : Node
 		switch (_mapType)
 		{
 			case MapType.TemperatureDistribution:
-				for (int x = 0; x < _temperatureCalculator.Length; x++)
+				for (int x = 0; x < _tempTop.Length; x++)
 				{
-					for (int y = 0; y < _temperatureCalculator.Length; y++)
+					for (int y = 0; y < _tempTop.Length; y++)
 					{
-						//cells_left[0, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						//cells_button[x, 0, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						//cells_back[x, y, 0].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						//cells_right[Length - 1, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						//cells_top[x, Width - 1, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						//cells_front[x, y, Height - 1].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells[0, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells[x, 0, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells[x, y, 0].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells[Length - 1, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells[x, Length - 1, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells[x, y, Length - 1].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[0, x, y].Temperature = (float)_tempTop.Cells[x, y];
+						cells[x, 0, y].Temperature = (float)_tempTop.Cells[x, y];
+						cells[x, y, 0].Temperature = (float)_tempTop.Cells[x, y];
+						cells[Length - 1, x, y].Temperature = (float)_tempTop.Cells[x, y];
+						cells[x, Length - 1, y].Temperature = (float)_tempTop.Cells[x, y];
+						cells[x, y, Length - 1].Temperature = (float)_tempTop.Cells[x, y];
 					}
 				}
 
 				break;
 			case MapType.TemperatureChangeDistribution:
-				for (int x = 0; x < _temperatureCalculator.Length; x++)
+				for (int x = 0; x < _tempTop.Length; x++)
 				{
-					for (int y = 0; y < _temperatureCalculator.Length; y++)
+					for (int y = 0; y < _tempTop.Length; y++)
 					{
-						cells[x, 0, y].Temperature = (float)_temperatureCalculator.CellsDerivative[x, y];
+						cells[x, 0, y].Temperature = (float)_tempTop.CellsDerivative[x, y];
 					}
 				}
 
 				break;
 			case MapType.TemperatureAnomalyDistribution:
-				for (int x = 0; x < _temperatureCalculator.Length; x++)
+				for (int x = 0; x < _tempTop.Length; x++)
 				{
-					for (int y = 0; y < _temperatureCalculator.Length; y++)
+					for (int y = 0; y < _tempTop.Length; y++)
 					{
-						cells[x, 0, y].Temperature = (float)_temperatureCalculator.CellsAnomaly[x, y];
+						cells[x, 0, y].Temperature = (float)_tempTop.CellsAnomaly[x, y];
 					}
 				}
 
@@ -140,7 +131,7 @@ public partial class Controller : Node
 		{
 			if (keyEvent.Keycode == Key.R)
 			{
-				_temperatureCalculator.ClearCells();
+				_tempTop.ClearCells();
 			}
 
 			if (keyEvent.Keycode == Key.T)

@@ -1,7 +1,7 @@
 using static Godot.GD;
 namespace _Climate.Scripts;
 
-public class TemperatureCalculator(int length, double alpha)
+public class TemperatureCalculator(int length, double alpha, TemperatureCalculator tempUp, TemperatureCalculator tempDown, TemperatureCalculator tempLeft, TemperatureCalculator tempRight)
 {
 	public readonly int Length = length;
 	public readonly double Alpha = alpha;
@@ -10,11 +10,17 @@ public class TemperatureCalculator(int length, double alpha)
 	public double[,] CellsAnomaly = new double[length, length];  // 气温距平分布
 	private double[,] _cellsAverage = new double[length, length];  // 平均值
 	private uint _averageCount = 0;
-	
-	
+
+
+	private TemperatureCalculator TempUp = tempUp;
+	private TemperatureCalculator TempDown = tempDown;
+	private TemperatureCalculator TempLeft = tempLeft;
+	private TemperatureCalculator TempRight = tempRight;
+
+
 	public void Calculate(double delta)
 	{
-		var dx2 = 1.0 / ((length - 1) * (length - 1));
+		var dx2 = 1.0 / ((length - 1) << 1);
 
 		// 辅助函数，用于计算温度分布的导数
 		double[,] ComputeHeatEquation(double[,] cells, double[,] uk, double uk_delta, int width, int height, double dx2, double alpha)
@@ -27,7 +33,7 @@ public class TemperatureCalculator(int length, double alpha)
 				{
 					double d2Tdx2 = 0;
 					double d2Tdy2 = 0;
-					
+
 
 					if (x > 0) d2Tdx2 += cells[x - 1, y] + uk[x - 1, y] * uk_delta;
 					if (x < width - 1) d2Tdx2 += cells[x + 1, y] + uk[x + 1, y] * uk_delta;
@@ -42,7 +48,7 @@ public class TemperatureCalculator(int length, double alpha)
 
 					d2Tdx2 -= 2 * (cells[x, y] + (uk[x, y] * uk_delta));
 					d2Tdy2 -= 2 * (cells[x, y] + (uk[x, y] * uk_delta));
-					
+
 
 					dTdt[x, y] = alpha * (d2Tdx2 / (dx2) + d2Tdy2 / (dx2)); // 将矩阵展平成向量
 				}
@@ -79,10 +85,10 @@ public class TemperatureCalculator(int length, double alpha)
 		// 数学逼提醒了我用龙格库塔法求偏微分，让我们赞美数学逼
 		Cells = rk4(Cells, delta, Length, Length, dx2, Alpha);
 		CellsDerivative = ComputeHeatEquation(Cells, null, 0, Length, Length, dx2, Alpha);
-		
-		
+
+
 		// 距平值计算
-		for (var x = 0; x < Length; x++) 
+		for (var x = 0; x < Length; x++)
 		{
 			for (var y = 0; y < Length; y++)
 			{
@@ -98,11 +104,11 @@ public class TemperatureCalculator(int length, double alpha)
 				CellsAnomaly[x, y] = Cells[x, y] - _cellsAverage[x, y];
 			}
 		}
-	
-		if(_averageCount < 1000)
-			_averageCount ++;
+
+		if (_averageCount < 1000)
+			_averageCount++;
 	}
-	
+
 	public void ClearCells()
 	{
 		for (var x = 0; x < Length; x++)
