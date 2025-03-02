@@ -8,10 +8,19 @@ public partial class SphereCamera3D : Camera3D
 {
 	private Vector2 mousePos = new();
 
-	private float Zoom
+	[Export] private float MinScale = 1.1f;
+	[Export] private float MaxScale = 10f;
+	[Export]
+	private float CameraScale
 	{
-		get => Position.Length();
-		set;
+		get => field;
+		set
+		{
+			if (value > MinScale && value < MaxScale)
+				field = value;
+			else
+				field = Mathf.Clamp(value, MinScale, MaxScale);
+		}
 	}
 
 	public override void _Ready()
@@ -21,23 +30,30 @@ public partial class SphereCamera3D : Camera3D
 
 	public override void _Process(double delta)
 	{
-		Rotation = new Quaternion(Vector3.Forward, -Position.Normalized()).GetEuler();
+		ScaleUpdate();
+		MouseMoveUpdate();
+
+		Rotation = new Quaternion(Vector3.Forward, -Position.Normalized()).Normalized().GetEuler();
 		Rotation = new(Rotation.X, Rotation.Y, 0);
-		// MouseMoveUpdate();
+
 	}
 
 	private void MouseMoveUpdate()
 	{
+		Vector2 deltaPos = mousePos - GetViewport().GetMousePosition();
+		mousePos = GetViewport().GetMousePosition();
 		if (Input.IsMouseButtonPressed(MouseButton.Left))
 		{
-			Vector2 deltaPos = mousePos - GetViewport().GetMousePosition();
 			Print(deltaPos);
-
-			// Position += deltaPos;
-			// nextPos = Position;
+			Quaternion quaternion = Quaternion.FromEuler(new Vector3(0, deltaPos.X * (CameraScale - 0.8f) / 1000, deltaPos.Y * (CameraScale - 0.8f) / 1000));
+			Position = quaternion * Position;
 		}
 	}
 
+	private void ScaleUpdate()
+	{
+		Position = Position.Lerp(Position.Normalized() * CameraScale * 半径, 0.1f);
+	}
 
 	public override void _Input(InputEvent @event)
 	{
@@ -47,15 +63,12 @@ public partial class SphereCamera3D : Camera3D
 			{
 				//放大
 				case MouseButton.WheelUp:
-					if (Position.Length() > 1.1 * 半径)
-						Position /= 1.1f;
+					CameraScale /= 1.1f;
 					break;
 
 				//缩小
 				case MouseButton.WheelDown:
-					if (Position.Length() < 10 * 半径)
-						Position *= 1.1f;
-					Print(1);
+					CameraScale *= 1.1f;
 					break;
 				default:
 					break;
