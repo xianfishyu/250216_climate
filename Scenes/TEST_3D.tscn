@@ -1,18 +1,26 @@
-[gd_scene load_steps=4 format=3 uid="uid://uyewp03xo681"]
+[gd_scene load_steps=5 format=3 uid="uid://uyewp03xo681"]
 
-[ext_resource type="Texture2D" uid="uid://dq025xasxmtxw" path="res://icon.svg" id="1_sfafm"]
+[ext_resource type="Texture2D" uid="uid://8ju4dbsqyy6a" path="res://2k_earth_daymap.jpg" id="1_qr65g"]
+[ext_resource type="Script" path="res://Scripts/SphereCamera3D.cs" id="2_pc1j1"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o2vdd"]
-albedo_texture = ExtResource("1_sfafm")
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t0s20"]
+albedo_texture = ExtResource("1_qr65g")
 
 [sub_resource type="SphereMesh" id="SphereMesh_hjakg"]
+radius = 10.0
+height = 20.0
 
 [node name="Node3D" type="Node3D"]
 metadata/_edit_lock_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-material_override = SubResource("StandardMaterial3D_o2vdd")
+material_override = SubResource("StandardMaterial3D_t0s20")
 mesh = SubResource("SphereMesh_hjakg")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 6, 0, 0)
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 14, 0, 0)
+script = ExtResource("2_pc1j1")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Camera3D"]
+omni_range = 4096.0
+omni_attenuation = 0.0
