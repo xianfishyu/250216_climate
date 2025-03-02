@@ -6,7 +6,6 @@ using static Godot.GD;
 public partial class Cell : MeshInstance3D
 {
 	StandardMaterial3D material3D;
-
 	public float Temperature
 	{
 		get
