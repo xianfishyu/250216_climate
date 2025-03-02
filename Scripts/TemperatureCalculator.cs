@@ -12,12 +12,6 @@ public class TemperatureCalculator(int length, double alpha, TemperatureCalculat
 	private uint _averageCount = 0;
 
 
-	private TemperatureCalculator TempUp = tempUp;
-	private TemperatureCalculator TempDown = tempDown;
-	private TemperatureCalculator TempLeft = tempLeft;
-	private TemperatureCalculator TempRight = tempRight;
-
-
 	public void Calculate(double delta)
 	{
 		var dx2 = 1.0 / ((length - 1) << 1);
