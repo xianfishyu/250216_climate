@@ -14,6 +14,7 @@ public partial class Controller : Node
 	[Export] int Height = 20;
 	[Export] double Alpha = 1e-4;
 	Cell[,,] cells_left, cells_front, cells_right, cells_back, cells_top, cells_button;
+	Cell[,,] cells;
 
 	// 温度分布图，变温分布图，气温距平分布图
 	private enum MapType
@@ -32,6 +33,35 @@ public partial class Controller : Node
 	public override void _Ready()
 	{
 		_temperatureCalculator = new TemperatureCalculator(Width, Height, Alpha);
+		
+		cells = new Cell[Length, Width, Height];
+		cellPrefab = cellScene.Instantiate<MeshInstance3D>();
+		
+		// Create cells
+
+		 for (int i = 0; i < Length; i++)
+		{
+			for (int j = 0; j < Width; j++)
+			{
+				for (int k = 0; k < Height; k++)
+				{
+					if ((i == 0 || i == Length - 1) || (j == 0 || j == Width - 1) || (k == 0 || k == Height - 1))
+					{
+						MeshInstance3D cell = cellPrefab.Duplicate() as MeshInstance3D;
+						AddChild(cell);
+						cell.Scale = new Vector3(CellSize, CellSize, CellSize);
+						cell.Position = new Vector3(
+							(i - Length / 2) * CellSize,
+							(j - Width / 2) * CellSize,
+							(k - Height / 2) * CellSize
+						);
+						cells[i, j, k] = cell as Cell;
+					}
+				}
+			}
+		}
+		
+		/*
 		cells_left = new Cell[Length, Width, Height];
 		cells_front = new Cell[Length, Width, Height];
 		cells_right = new Cell[Length, Width, Height];
@@ -166,6 +196,9 @@ public partial class Controller : Node
 				}
 			}
 		}
+	*/
+		
+		
 	}
 
 	public override void _Process(double delta)
@@ -201,12 +234,18 @@ public partial class Controller : Node
 				{
 					for (int y = 0; y < _temperatureCalculator.Height; y++)
 					{
-						cells_left[0, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells_button[x, 0, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells_back[x, y, 0].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells_right[Length - 1, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells_top[x, Width - 1, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
-						cells_front[x, y, Height - 1].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						//cells_left[0, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						//cells_button[x, 0, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						//cells_back[x, y, 0].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						//cells_right[Length - 1, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						//cells_top[x, Width - 1, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						//cells_front[x, y, Height - 1].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[0, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[x, 0, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[x, y, 0].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[Length - 1, x, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[x, Width - 1, y].Temperature = (float)_temperatureCalculator.Cells[x, y];
+						cells[x, y, Height - 1].Temperature = (float)_temperatureCalculator.Cells[x, y];
 					}
 				}
 
