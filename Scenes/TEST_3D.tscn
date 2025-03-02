@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://uyewp03xo681"]
+
+[ext_resource type="Texture2D" uid="uid://dq025xasxmtxw" path="res://icon.svg" id="1_sfafm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o2vdd"]
+albedo_texture = ExtResource("1_sfafm")
+
+[sub_resource type="SphereMesh" id="SphereMesh_hjakg"]
+
+[node name="Node3D" type="Node3D"]
+metadata/_edit_lock_ = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_o2vdd")
+mesh = SubResource("SphereMesh_hjakg")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 6, 0, 0)

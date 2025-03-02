@@ -81,7 +81,7 @@ public partial class Controller2D : Node2D
 	private void ComputeShaderReady(List<CellIndex> cellIndexList)
 	{
 		GroupSize  = (uint)CellResolution / 32;
-		Print(GroupSize);
+
 		//加载着色器
 		RD = RenderingServer.CreateLocalRenderingDevice();
 
@@ -352,20 +352,16 @@ public partial class Controller2D : Node2D
 		public void SetTemperature()
 		{
 			// Temperature = 10;
-			Temperature = RandRange(-100, 100);
+			// Temperature = RandRange(-100, 100);
 			// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
 			// Temperature = GeoCoordinate.X * 57.3f;
 			// Temperature = GeoCoordinate.Y * 20f;
-			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
-			// 	Temperature = 100;
-			// else
-			// 	Temperature = -100;
-			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
-			// 	Temperature = -100;
-			// else
-			// 	Temperature= 100;
-			// else
-			// 	Temperature = 0;
+			if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
+				Temperature = 100;
+			else if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
+				Temperature = -100;
+			else
+				Temperature = 0;
 		}
 	}
 
@@ -410,6 +406,7 @@ public partial class Controller2D : Node2D
 
 		public void TextureUpdate()
 		{
+
 			//显然,这里的取整有bug,不过只要限定纹理是2的倍数就好了,只要不是质数就丢弃不了多少
 
 			if (textureImage == null)

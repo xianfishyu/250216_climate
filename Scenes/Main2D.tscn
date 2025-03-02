@@ -12,8 +12,8 @@ script = ExtResource("1_tpgag")
 ComputeShaderPath = "res://ComputeShaders/TemperatureCalculator2D.glsl"
 ChunkPrefab = ExtResource("2_nm3y4")
 Timer = NodePath("Timer")
-ColdThreshold = -0.1
-HotThreshold = 0.1
+ColdThreshold = -1.0
+HotThreshold = 1.0
 metadata/_edit_lock_ = true
 
 [node name="Timer" type="Timer" parent="Controller"]
