@@ -4,7 +4,7 @@ import { defineConfig } from "vitepress";
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     base: '/250216_climate/',
-    srcDir: ".vitepress/src",
+    srcDir: "web/src",
     lang: "zh-Hans",
     title: "250216_climate",
     description: "不知道",
