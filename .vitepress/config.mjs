@@ -3,6 +3,7 @@ import { defineConfig } from "vitepress";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+    base: '/250216_climate/',
     srcDir: ".vitepress/src",
     lang: "zh-Hans",
     title: "250216_climate",
@@ -13,8 +14,8 @@ export default defineConfig({
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         nav: [
-            { text: "首页", link: "/250216_climate/" },
-            { text: "开发文档", link: "/250216_climate/docs/introduction", activeMatch: "/250216_climate/docs" }
+            { text: "首页", link: "/" },
+            { text: "开发文档", link: "/docs/introduction", activeMatch: "/docs" }
         ],
         sidebar: [
             {
