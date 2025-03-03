@@ -7,7 +7,7 @@ hero:
   tagline: 两个少女在探索着支离破碎的世界中逐渐解锁那尘封的过去
   actions:
     - theme: brand
-      text: 使用手册
+      text: 待办事项
       link: /guide/introduction
       
     - theme: alt
@@ -15,8 +15,8 @@ hero:
       link: /docs/introduction
       
     - theme: alt
-      text: 挂个猪
-      link: https://github.com/xianfishyu
+      text: Github
+      link: https://github.com/xianfishyu/250216_climate
 
       
 features:
@@ -24,6 +24,9 @@ features:
     details: 使用热扩散方程计算地图中的温度
     
   - title: 坐标系映射
-    details: 有猪这个都不会写
-      
+    details: 将正六面体映射成一个圆，存在潜在的畸变风险
+
+  - title: 地形系统
+    details: 反正要做
+           
 ---
