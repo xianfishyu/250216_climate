@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 待办事项
-      link: /guide/introduction
+      link: /todo/todolist
       
     - theme: alt
       text: 开发文档
