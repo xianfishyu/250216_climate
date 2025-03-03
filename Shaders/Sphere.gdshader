@@ -25,7 +25,7 @@ uniform float radius = 100.0;
 
 void vertex() {
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
-	
+
 	vec3 pos = normalize(VERTEX);
 	VERTEX = pos * radius;
 	NORMAL = normalize(VERTEX);

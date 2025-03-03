@@ -138,6 +138,9 @@ public partial class SphereGroup : Node3D
 
 	private void TextureUpdate()
 	{
+		foreach(var chunk in Chunks.Values)
+			chunk.TextureResolution = TextureReso;
+
 		PlanesTexture["Up"].SetShaderParameter("texture_albedo",Chunks["Up"].TextureUpdate());
 		PlanesTexture["Down"].SetShaderParameter("texture_albedo",Chunks["Down"].TextureUpdate());
 		PlanesTexture["Left"].SetShaderParameter("texture_albedo",Chunks["Left"].TextureUpdate());
@@ -284,16 +287,16 @@ public partial class Cell2D : GodotObject
 	public void SetTemperature()
 	{
 			// Temperature = 10;
-			Temperature = RandRange(-100, 100);
+			// Temperature = RandRange(-100, 100);
 			// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
 			// Temperature = GeoCoordinate.X * 57.3f;
 			// Temperature = GeoCoordinate.Y * 20f;
-			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
-			// 	Temperature = 100;
-			// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 100 <= 5)
-			// 	Temperature = -100;
-			// else
-			// 	Temperature = 0;
+			if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 5)
+				Temperature = 100;
+			else if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
+				Temperature = -100;
+			else
+				Temperature = 0;
 	}
 }
 
@@ -357,7 +360,7 @@ public partial class Chunk : GodotObject
 
 				float newT = sigmaT / scaleFactor / scaleFactor;
 
-				textureImage.SetPixel(x, y, SphereGroup.colorMpping.GetHeatColor_S(newT));
+				textureImage.SetPixel(x, y, SphereGroup.colorMpping.GetHeatColor_H_OutOfRange(newT));
 			}
 		
 		return ImageTexture.CreateFromImage(textureImage);

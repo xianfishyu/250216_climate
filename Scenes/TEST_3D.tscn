@@ -1,9 +1,8 @@
-[gd_scene load_steps=20 format=3 uid="uid://uyewp03xo681"]
+[gd_scene load_steps=19 format=3 uid="uid://uyewp03xo681"]
 
 [ext_resource type="Texture2D" uid="uid://8ju4dbsqyy6a" path="res://2k_earth_daymap.jpg" id="1_qr65g"]
 [ext_resource type="Script" uid="uid://inb084b05cl" path="res://Scripts/SphereCamera3D.cs" id="2_pc1j1"]
 [ext_resource type="Script" uid="uid://dsdpauexhkksk" path="res://Scripts/SphereGroup.cs" id="3_kegnc"]
-[ext_resource type="Texture2D" uid="uid://dq025xasxmtxw" path="res://icon.svg" id="4_6dlgo"]
 [ext_resource type="Shader" uid="uid://kurmdtl6sytf" path="res://Shaders/Sphere.gdshader" id="4_sye2a"]
 [ext_resource type="Material" uid="uid://bvkpsbaol7nr6" path="res://Material/Plane.tres" id="5_6dlgo"]
 
@@ -18,15 +17,14 @@ rings = 128
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kegnc"]
 size = Vector2(200, 200)
-subdivide_width = 100
-subdivide_depth = 100
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, 100, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6dlgo"]
 render_priority = 0
 shader = ExtResource("4_sye2a")
 shader_parameter/albedo = Color(1, 1, 1, 1)
-shader_parameter/texture_albedo = ExtResource("4_6dlgo")
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -42,15 +40,14 @@ shader_parameter/radius = 100.0
 [sub_resource type="PlaneMesh" id="PlaneMesh_sye2a"]
 flip_faces = true
 size = Vector2(200, 200)
-subdivide_width = 100
-subdivide_depth = 100
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, -100, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_lpjr5"]
 render_priority = 0
 shader = ExtResource("4_sye2a")
 shader_parameter/albedo = Color(1, 1, 1, 1)
-shader_parameter/texture_albedo = ExtResource("4_6dlgo")
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -65,8 +62,8 @@ shader_parameter/radius = 100.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_6dlgo"]
 size = Vector2(200, 200)
-subdivide_width = 100
-subdivide_depth = 100
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, 0, 100)
 orientation = 2
 
@@ -74,7 +71,6 @@ orientation = 2
 render_priority = 0
 shader = ExtResource("4_sye2a")
 shader_parameter/albedo = Color(1, 1, 1, 1)
-shader_parameter/texture_albedo = ExtResource("4_6dlgo")
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -90,8 +86,8 @@ shader_parameter/radius = 100.0
 [sub_resource type="PlaneMesh" id="PlaneMesh_lpjr5"]
 flip_faces = true
 size = Vector2(200, 200)
-subdivide_width = 100
-subdivide_depth = 100
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, 0, -100)
 orientation = 2
 
@@ -99,7 +95,6 @@ orientation = 2
 render_priority = 0
 shader = ExtResource("4_sye2a")
 shader_parameter/albedo = Color(1, 1, 1, 1)
-shader_parameter/texture_albedo = ExtResource("4_6dlgo")
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -114,8 +109,8 @@ shader_parameter/radius = 100.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_gcfrn"]
 size = Vector2(200, 200)
-subdivide_width = 100
-subdivide_depth = 100
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(100, 0, 0)
 orientation = 0
 
@@ -123,7 +118,6 @@ orientation = 0
 render_priority = 0
 shader = ExtResource("4_sye2a")
 shader_parameter/albedo = Color(1, 1, 1, 1)
-shader_parameter/texture_albedo = ExtResource("4_6dlgo")
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -139,8 +133,8 @@ shader_parameter/radius = 100.0
 [sub_resource type="PlaneMesh" id="PlaneMesh_5cfcb"]
 flip_faces = true
 size = Vector2(200, 200)
-subdivide_width = 100
-subdivide_depth = 100
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(-100, 0, 0)
 orientation = 0
 
@@ -163,6 +157,7 @@ omni_attenuation = 0.0
 
 [node name="SphereGroup" type="Node3D" parent="." node_paths=PackedStringArray("Planes", "Timer")]
 script = ExtResource("3_kegnc")
+Subsurf = 10
 Planes = {
 &"Back": NodePath("Back"),
 &"Down": NodePath("Down"),
@@ -179,6 +174,7 @@ ColdThreshold = -10.0
 [node name="Up" type="MeshInstance3D" parent="SphereGroup"]
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, 0, 0)
 material_override = ExtResource("5_6dlgo")
+custom_aabb = AABB(-1000, -1000, -1000, 2000, 2000, 2000)
 mesh = SubResource("PlaneMesh_kegnc")
 skeleton = NodePath("../Left")
 metadata/_edit_lock_ = true
@@ -186,6 +182,7 @@ metadata/_edit_lock_ = true
 [node name="Down" type="MeshInstance3D" parent="SphereGroup"]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_6dlgo")
+custom_aabb = AABB(-1000, -1000, -1000, 2000, 2000, 2000)
 mesh = SubResource("PlaneMesh_sye2a")
 skeleton = NodePath("../Left")
 metadata/_edit_lock_ = true
