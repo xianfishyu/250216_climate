@@ -20,6 +20,4 @@ public class Earth
 	int 表面积;
 
 	int 地球没平方米光强度;
-
-	public static int Subsurf = 10;
 }
