@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://bv551wilhjobj"]
 
-[ext_resource type="Script" path="res://Scripts/Controller2D.cs" id="1_tpgag"]
+[ext_resource type="Script" uid="uid://bmyjl1ja7nm1u" path="res://Scripts/Controller2D.cs" id="1_tpgag"]
 [ext_resource type="PackedScene" uid="uid://dc37ysi5bea82" path="res://Nodes/Chunk2D.tscn" id="2_nm3y4"]
-[ext_resource type="Script" path="res://Scripts/camera_controller2D.gd" id="2_uwh61"]
+[ext_resource type="Script" uid="uid://xvst360ld8ao" path="res://Scripts/camera_controller2D.gd" id="2_uwh61"]
 
 [node name="Node2D" type="Node2D"]
 metadata/_edit_lock_ = true

@@ -30,8 +30,10 @@ public partial class SphereCamera3D : Camera3D
 				MathF.Atan2(Position.Y, MathF.Sqrt(MathF.Pow(Position.X, 2) + MathF.Pow(Position.Z, 2))));
 		set
 		{
-			if (value.Y > 1.552555555555556)
-				value.Y = 1.552555555555556f;
+			if (value.Y > (89 * MathF.PI / 180))
+				value.Y = 89 * MathF.PI / 180;
+			if (value.Y < -(89 * MathF.PI / 180))
+				value.Y = -89 * MathF.PI / 180;
 			Position = new Vector3(
 				MathF.Cos(value.Y) * MathF.Sin(value.X),
 				MathF.Sin(value.Y),
@@ -61,7 +63,7 @@ public partial class SphereCamera3D : Camera3D
 		//你是看不懂这段代码的
 		if (Input.IsMouseButtonPressed(MouseButton.Left))
 		{
-			CameraGeoCoord -= deltaPos / Mathf.Tau / 100 * (CameraScale -0.9f);
+			CameraGeoCoord -= deltaPos / Mathf.Tau / 100 * (CameraScale - 0.9f);
 		}
 	}
 

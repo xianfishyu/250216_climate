@@ -16,8 +16,10 @@ public class Earth
 	int 转轴倾角;
 	int 轨道倾角;
 
-	public static float 半径 = 10;
+	public static float 半径 = 100;
 	int 表面积;
 
 	int 地球没平方米光强度;
+
+	public static int Subsurf = 10;
 }

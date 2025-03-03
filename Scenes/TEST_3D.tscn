@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://uyewp03xo681"]
+[gd_scene load_steps=12 format=3 uid="uid://uyewp03xo681"]
 
 [ext_resource type="Texture2D" uid="uid://8ju4dbsqyy6a" path="res://2k_earth_daymap.jpg" id="1_qr65g"]
-[ext_resource type="Script" path="res://Scripts/SphereCamera3D.cs" id="2_pc1j1"]
+[ext_resource type="Script" uid="uid://inb084b05cl" path="res://Scripts/SphereCamera3D.cs" id="2_pc1j1"]
+[ext_resource type="Script" uid="uid://dsdpauexhkksk" path="res://Scenes/SphereGroup.cs" id="3_5j55x"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t0s20"]
 albedo_texture = ExtResource("1_qr65g")
@@ -12,18 +13,89 @@ height = 20.0
 radial_segments = 256
 rings = 128
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_kb1ky"]
+size = Vector2(200, 200)
+subdivide_width = 100
+subdivide_depth = 100
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_vlmkc"]
+size = Vector2(200, 200)
+subdivide_width = 100
+subdivide_depth = 100
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_h2b6m"]
+size = Vector2(200, 200)
+subdivide_width = 100
+subdivide_depth = 100
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_3c8sq"]
+size = Vector2(200, 200)
+subdivide_width = 100
+subdivide_depth = 100
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_x0gct"]
+size = Vector2(200, 200)
+subdivide_width = 100
+subdivide_depth = 100
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_e050f"]
+size = Vector2(200, 200)
+subdivide_width = 100
+subdivide_depth = 100
+
 [node name="Node3D" type="Node3D"]
 metadata/_edit_lock_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
 material_override = SubResource("StandardMaterial3D_t0s20")
 mesh = SubResource("SphereMesh_hjakg")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 14, 0, 0)
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 15, 0, 0)
 script = ExtResource("2_pc1j1")
 CameraScale = 5.0
 
 [node name="OmniLight3D" type="OmniLight3D" parent="Camera3D"]
 omni_range = 4096.0
 omni_attenuation = 0.0
+
+[node name="SphereGroup" type="Node3D" parent="."]
+script = ExtResource("3_5j55x")
+Planes = {
+"Back": NodePath("Back"),
+"Down": NodePath("Down"),
+"Front": NodePath("Front"),
+"Left": NodePath("Left"),
+"Right": NodePath("Right"),
+"Up": NodePath("Up")
+}
+
+[node name="Up" type="MeshInstance3D" parent="SphereGroup"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
+mesh = SubResource("PlaneMesh_kb1ky")
+skeleton = NodePath("../Left")
+
+[node name="Down" type="MeshInstance3D" parent="SphereGroup"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.74228e-08, 0, -8.74228e-08, -1, 0, -100, 0)
+mesh = SubResource("PlaneMesh_vlmkc")
+skeleton = NodePath("../Left")
+
+[node name="Left" type="MeshInstance3D" parent="SphereGroup"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 100)
+mesh = SubResource("PlaneMesh_h2b6m")
+
+[node name="Right" type="MeshInstance3D" parent="SphereGroup"]
+transform = Transform3D(1, 0, 0, 0, 1.31134e-07, 1, 0, -1, 1.31134e-07, 0, 0, -100)
+mesh = SubResource("PlaneMesh_3c8sq")
+skeleton = NodePath("../Left")
+
+[node name="Front" type="MeshInstance3D" parent="SphereGroup"]
+transform = Transform3D(-4.37114e-08, 1, -1.74846e-07, -1, -4.37114e-08, 7.64274e-15, 0, 1.74846e-07, 1, 100, 0, 0)
+mesh = SubResource("PlaneMesh_x0gct")
+skeleton = NodePath("../Left")
+
+[node name="Back" type="MeshInstance3D" parent="SphereGroup"]
+transform = Transform3D(-4.37114e-08, -1, 2.62268e-07, -1, 4.37114e-08, -1.14641e-14, 0, -2.62268e-07, -1, -100, 0, 0)
+mesh = SubResource("PlaneMesh_e050f")
+skeleton = NodePath("../Left")
