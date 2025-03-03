@@ -1,2 +1,0 @@
-- name: Action to update GitHub Action documentation
-  uses: npalm/action-docs-action@v3.1.2
