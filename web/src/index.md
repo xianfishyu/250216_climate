@@ -12,7 +12,7 @@ hero:
       
     - theme: alt
       text: 开发文档
-      link: /docs/introduction
+      link: /docs/describe
       
     - theme: alt
       text: Github

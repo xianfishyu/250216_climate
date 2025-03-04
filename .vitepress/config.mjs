@@ -1,38 +1,38 @@
 import { defineConfig } from 'vitepress';
 
-// // 自动更新类引用
-// import fs from 'fs';
-// import path from 'path';
+// 自动更新类引用
+import fs from 'fs';
+import path from 'path';
 
-// // 获取所有 C# 文件中的类名
-// const scriptsDir = path.join(__dirname, '..', 'Scripts')
-// const classNames: string[] = []
+// 获取所有 C# 文件中的类名
+const scriptsDir = path.join(__dirname, '..', 'Scripts')
+const classNames: string[] = []
 
-// fs.readdirSync(scriptsDir).forEach(file => {
-//     if (file.endsWith('.cs')) {
-//         const content = fs.readFileSync(path.join(scriptsDir, file), 'utf-8')
-//         const matches = content.match(/class\s+(\w+)/g)
-//         if (matches) {
-//             matches.forEach(match => {
-//                 const className = match.split(' ')[1]
-//                 classNames.push(className)
-//             })
-//         }
-//     }
-// })
+fs.readdirSync(scriptsDir).forEach(file => {
+    if (file.endsWith('.cs')) {
+        const content = fs.readFileSync(path.join(scriptsDir, file), 'utf-8')
+        const matches = content.match(/class\s+(\w+)/g)
+        if (matches) {
+            matches.forEach(match => {
+                const className = match.split(' ')[1]
+                classNames.push(className)
+            })
+        }
+    }
+})
 
-// const items = classNames.map(className => ({
-//     text: className,
-//     link: `/docs/class_reference#${className}`
-// }))
-const items = [{
-    text: "className",
-    link: "/docs/class_reference#${className}"
-}, {
-    text: "className",
-    link: "/docs/class_reference#${className}"
-}
-]
+const items = classNames.map(className => ({
+    text: className,
+    link: `/docs/class_reference#${className}`
+}))
+// const items = [{
+//     text: "className",
+//     link: "/docs/class_reference#${className}"
+// }, {
+//     text: "className",
+//     link: "/docs/class_reference#${className}"
+// }
+// ]
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
