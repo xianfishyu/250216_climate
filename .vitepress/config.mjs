@@ -50,8 +50,8 @@ export default defineConfig({
                     {
                         text: "类引用", link: "/docs/class_reference", items: [
                             {
-                                text: Template,
-                                link: `/docs/class_reference/Template`
+                                text: "Template",
+                                link: "/docs/class_reference/Template"
                             },
                             ...items
                         ]
