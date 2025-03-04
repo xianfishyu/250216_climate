@@ -1,5 +1,30 @@
 import { defineConfig } from "vitepress";
 
+// 自动更新类引用
+import fs from 'fs'
+import path from 'path'
+
+// 获取所有 C# 文件中的类名
+const scriptsDir = path.join(__dirname, '..', 'Scripts')
+const classNames: string[] = []
+
+fs.readdirSync(scriptsDir).forEach(file => {
+    if (file.endsWith('.cs')) {
+        const content = fs.readFileSync(path.join(scriptsDir, file), 'utf-8')
+        const matches = content.match(/class\s+(\w+)/g)
+        if (matches) {
+            matches.forEach(match => {
+                const className = match.split(' ')[1]
+                classNames.push(className)
+            })
+        }
+    }
+})
+
+const items = classNames.map(className => ({
+    text: className,
+    link: `/docs/class_reference#${className}`
+}))
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -19,21 +44,27 @@ export default defineConfig({
         ],
         sidebar: [
             {
-                text: "开始使用",
+                text: "待办事项",
                 collapsed: false,
                 items: [
+                    { text: "介绍", link: "/todo/describe" },
+                    { text: "日程表", link: "/todo/todolist" }
                 ]
             },
             {
                 text: "开发文档",
                 collapsed: false,
                 items: [
+                    { text: "介绍", link: "/docs/introduction" },
+                    {
+                        text: "类引用", link: "/docs/class_reference", items
+                    }
                 ]
             }
         ],
         editLink: {
         },
-    
+
         lastUpdated: {
             text: "最后更新",
             formatOptions: {
