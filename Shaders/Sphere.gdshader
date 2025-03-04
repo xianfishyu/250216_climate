@@ -26,7 +26,11 @@ uniform float radius = 100.0;
 void vertex() {
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 
-	vec3 pos = normalize(VERTEX);
+	vec3 toward = normalize(VERTEX);
+	vec3 pos;
+		pos.x = toward.x * sqrt(1.0 - (pow(toward.y, 2) / 2.0) - (pow(toward.z, 2) / 2.0) + ((pow(toward.y, 2) + pow(toward.z, 2)) / 3.0));
+		pos.y = toward.y * sqrt(1.0 - (pow(toward.x, 2) / 2.0) - (pow(toward.z, 2) / 2.0) + ((pow(toward.x, 2) + pow(toward.z, 2)) / 3.0));
+		pos.z = toward.z * sqrt(1.0 - (pow(toward.x, 2) / 2.0) - (pow(toward.y, 2) / 2.0) + ((pow(toward.x, 2) + pow(toward.y, 2)) / 3.0));
 	VERTEX = pos * radius;
 	NORMAL = normalize(VERTEX);
 }
