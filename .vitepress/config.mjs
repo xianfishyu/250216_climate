@@ -49,6 +49,10 @@ export default defineConfig({
                     { text: "介绍", link: "/docs/describe" },
                     {
                         text: "类引用", link: "/docs/class_reference", items: [
+                            {
+                                text: Template,
+                                link: `/docs/class_reference/Template`
+                            },
                             ...items
                         ]
                     }
