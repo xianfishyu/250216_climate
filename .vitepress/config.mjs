@@ -6,7 +6,7 @@ import path from 'path';
 
 // 获取所有 C# 文件中的类名
 const scriptsDir = path.join(__dirname, '..', 'Scripts')
-const classNames: string[] = []
+const classNames = []
 
 fs.readdirSync(scriptsDir).forEach(file => {
     if (file.endsWith('.cs')) {
