@@ -17,7 +17,7 @@ fs.readdirSync(scriptsDir).forEach(file => {
 
 const items = classNames.map(className => ({
     text: className,
-    link: `/docs/class_reference/${className}`
+    link: `/docs/class_reference/class/${className}`
 }))
 
 // https://vitepress.dev/reference/site-config
@@ -51,7 +51,7 @@ export default defineConfig({
                         text: "类引用", link: "/docs/class_reference", items: [
                             {
                                 text: "Template",
-                                link: "/docs/class_reference/Template"
+                                link: "/docs/class_reference/class/Template"
                             },
                             ...items
                         ]
