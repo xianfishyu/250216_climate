@@ -10,29 +10,15 @@ const classNames = []
 
 fs.readdirSync(scriptsDir).forEach(file => {
     if (file.endsWith('.cs')) {
-        const content = fs.readFileSync(path.join(scriptsDir, file), 'utf-8')
-        const matches = content.match(/class\s+(\w+)/g)
-        if (matches) {
-            matches.forEach(match => {
-                const className = match.split(' ')[1]
-                classNames.push(className)
-            })
-        }
+        const className = file.replace('.cs', '')
+        classNames.push(className)
     }
 })
 
 const items = classNames.map(className => ({
     text: className,
-    link: `/docs/class_reference#${className}`
+    link: `/docs/class_reference/${className}`
 }))
-// const items = [{
-//     text: "className",
-//     link: "/docs/class_reference#${className}"
-// }, {
-//     text: "className",
-//     link: "/docs/class_reference#${className}"
-// }
-// ]
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -54,16 +40,13 @@ export default defineConfig({
             {
                 text: "待办事项",
                 collapsed: false,
-                items: [
-                    { text: "介绍", link: "/todo/describe" },
-                    { text: "日程表", link: "/todo/todolist" }
-                ]
+                link: "/todo/todolist"
             },
             {
                 text: "开发文档",
                 collapsed: false,
                 items: [
-                    { text: "介绍", link: "/docs/introduction" },
+                    { text: "介绍", link: "/docs/describe" },
                     {
                         text: "类引用", link: "/docs/class_reference", items: [
                             ...items
