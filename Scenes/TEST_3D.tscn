@@ -17,8 +17,8 @@ rings = 128
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kegnc"]
 size = Vector2(200, 200)
-subdivide_width = 20
-subdivide_depth = 20
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, 100, 0)
 
 [sub_resource type="Image" id="Image_6dlgo"]
@@ -53,8 +53,8 @@ shader_parameter/radius = 100.0
 [sub_resource type="PlaneMesh" id="PlaneMesh_sye2a"]
 flip_faces = true
 size = Vector2(200, 200)
-subdivide_width = 20
-subdivide_depth = 20
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, -100, 0)
 
 [sub_resource type="Image" id="Image_gcfrn"]
@@ -88,8 +88,8 @@ shader_parameter/radius = 100.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_6dlgo"]
 size = Vector2(200, 200)
-subdivide_width = 20
-subdivide_depth = 20
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, 0, 100)
 orientation = 2
 
@@ -125,8 +125,8 @@ shader_parameter/radius = 100.0
 [sub_resource type="PlaneMesh" id="PlaneMesh_lpjr5"]
 flip_faces = true
 size = Vector2(200, 200)
-subdivide_width = 20
-subdivide_depth = 20
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(0, 0, -100)
 orientation = 2
 
@@ -161,8 +161,8 @@ shader_parameter/radius = 100.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_gcfrn"]
 size = Vector2(200, 200)
-subdivide_width = 20
-subdivide_depth = 20
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(100, 0, 0)
 orientation = 0
 
@@ -198,8 +198,8 @@ shader_parameter/radius = 100.0
 [sub_resource type="PlaneMesh" id="PlaneMesh_5cfcb"]
 flip_faces = true
 size = Vector2(200, 200)
-subdivide_width = 20
-subdivide_depth = 20
+subdivide_width = 10
+subdivide_depth = 10
 center_offset = Vector3(-100, 0, 0)
 orientation = 0
 
@@ -222,7 +222,7 @@ omni_attenuation = 0.0
 
 [node name="SphereGroup" type="Node3D" parent="." node_paths=PackedStringArray("Planes", "Timer")]
 script = ExtResource("3_kegnc")
-Subsurf = 20
+Subsurf = 10
 Planes = {
 &"Back": NodePath("Back"),
 &"Down": NodePath("Down"),
