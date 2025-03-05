@@ -31,7 +31,8 @@ void vertex() {
 		pos.x = toward.x * sqrt(1.0 - (pow(toward.y, 2) / 2.0) - (pow(toward.z, 2) / 2.0) + ((pow(toward.y, 2) + pow(toward.z, 2)) / 3.0));
 		pos.y = toward.y * sqrt(1.0 - (pow(toward.x, 2) / 2.0) - (pow(toward.z, 2) / 2.0) + ((pow(toward.x, 2) + pow(toward.z, 2)) / 3.0));
 		pos.z = toward.z * sqrt(1.0 - (pow(toward.x, 2) / 2.0) - (pow(toward.y, 2) / 2.0) + ((pow(toward.x, 2) + pow(toward.y, 2)) / 3.0));
-	VERTEX = pos * radius;
+	VERTEX = normalize(pos) * radius;
+	//VERTEX = toward * radius;
 	NORMAL = normalize(VERTEX);
 }
 

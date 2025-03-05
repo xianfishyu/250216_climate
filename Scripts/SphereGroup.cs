@@ -6,12 +6,12 @@ using static Earth;
 using static Tool;
 
 
-[Tool]
+// [Tool]
 public partial class SphereGroup : Node3D
 {
 	[ExportCategory("MeshSettings")]
 	[Export] private int Subsurf = 100;
-	[ExportToolButton("Reset")] private Callable Reset => Callable.From(PlanesReady);
+	// [ExportToolButton("Reset")] private Callable Reset => Callable.From(PlanesReady);
 
 	[Export] private Dictionary<StringName, MeshInstance3D> Planes = [];
 
@@ -287,12 +287,12 @@ public partial class Cell2D : GodotObject
 	public void SetTemperature()
 	{
 		// Temperature = 10;
-		// Temperature = RandRange(-100, 100);
+		Temperature = RandRange(-100, 100);
 		// Temperature = -MathF.Abs(GeoCoordinate.X) * 50 + RandRange(-10, 30);
 		// Temperature = GeoCoordinate.X * 57.3f;
 		// Temperature = GeoCoordinate.Y * 20f;
-		if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 10 <= 1)
-			Temperature = 100;
+		// if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.X)) % 20 <= 5)
+		// 	Temperature = 100;
 		// else if (Mathf.RadToDeg(Mathf.Abs(GeoCoordinate.Y)) % 10 <= 5)
 		// 	Temperature = -100;
 		// else
