@@ -11,6 +11,7 @@ public partial class SphereGroup : Node3D
 {
 	[ExportCategory("MeshSettings")]
 	[Export] private int Subsurf = 100;
+	[Export] private int 半径 = 100;
 	// [ExportToolButton("Reset")] private Callable Reset => Callable.From(PlanesReady);
 
 	[Export] private Dictionary<StringName, MeshInstance3D> Planes = [];
