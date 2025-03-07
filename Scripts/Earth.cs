@@ -25,7 +25,8 @@ public class Earth
 
 
 	//米?
-	float 半径 = 40000 * 1E3f;
+	// public static float 半径 = 40000 * 1E3f;
+	public static float 半径 = 100;
 	//米/平方秒?
 	float 重力;
 	//弧度/地球秒?

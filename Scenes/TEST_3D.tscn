@@ -253,27 +253,31 @@ metadata/_edit_lock_ = true
 
 [node name="Left" type="MeshInstance3D" parent="SphereGroup"]
 material_override = SubResource("ShaderMaterial_lpjr5")
+custom_aabb = AABB(-1000, -1000, -1000, 2000, 2000, 2000)
 mesh = SubResource("PlaneMesh_6dlgo")
 metadata/_edit_lock_ = true
 
 [node name="Right" type="MeshInstance3D" parent="SphereGroup"]
 material_override = SubResource("ShaderMaterial_gcfrn")
+custom_aabb = AABB(-1000, -1000, -1000, 2000, 2000, 2000)
 mesh = SubResource("PlaneMesh_lpjr5")
 skeleton = NodePath("../Left")
 metadata/_edit_lock_ = true
 
 [node name="Forward" type="MeshInstance3D" parent="SphereGroup"]
 material_override = SubResource("ShaderMaterial_5cfcb")
+custom_aabb = AABB(-1000, -1000, -1000, 2000, 2000, 2000)
 mesh = SubResource("PlaneMesh_gcfrn")
 skeleton = NodePath("../Left")
 metadata/_edit_lock_ = true
 
 [node name="Back" type="MeshInstance3D" parent="SphereGroup"]
 material_override = SubResource("ShaderMaterial_gqjwi")
+custom_aabb = AABB(-1000, -1000, -1000, 2000, 2000, 2000)
 mesh = SubResource("PlaneMesh_5cfcb")
 skeleton = NodePath("../Left")
 metadata/_edit_lock_ = true
 
 [node name="Timer" type="Timer" parent="SphereGroup"]
-wait_time = 4096.0
+wait_time = 0.1
 autostart = true
