@@ -2,7 +2,6 @@ using Godot;
 using System;
 using Godot.Collections;
 using static Godot.GD;
-using static Earth;
 using static Tool;
 
 

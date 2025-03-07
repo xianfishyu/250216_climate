@@ -1,13 +1,13 @@
 using Godot;
 using System;
 using static Godot.GD;
-using static Earth;
 using static Tool;
 
 public partial class SphereCamera3D : Camera3D
 {
 	private Vector2 mousePos = new();
 
+	[Export] private int 半径 = 100;
 	[Export] private float MinScale = 1.1f;
 	[Export] private float MaxScale = 10f;
 	[Export]

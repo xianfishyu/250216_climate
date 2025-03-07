@@ -2,7 +2,6 @@ using Godot;
 using System;
 using Godot.Collections;
 using static Godot.GD;
-using static Earth;
 using static Tool;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +21,7 @@ public class ComputeCalculator
 
     private float[] LocalTList;
 
-    private TEST.ComputeShaderInstance computeShaderInstance;
+    private ComputeShaderInstance computeShaderInstance;
 
     // public ComputeCalculator(string path, int resolution, Array<CellIndex> cellIndexList)
     // {
@@ -130,7 +129,11 @@ public class ComputeCalculator
         for (var i = 0; i < cellIndexList.Count; i++)
             LocalTList[i] = cellIndexList[i].temperature;
 
-        computeShaderInstance = new(path,[(typeof(float[]),LocalTList),(typeof(Vector4I[]),cellIndexList.Select(ci => ci.index).ToArray())]);
+        computeShaderInstance = new(path,
+        [
+            (typeof(float[]),LocalTList),
+            (typeof(Vector4I[]),cellIndexList.Select(ci => ci.index).ToArray())
+        ]);
 
     }
 
