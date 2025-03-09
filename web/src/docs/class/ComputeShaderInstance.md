@@ -42,15 +42,20 @@ public int[] GetIntArrayResult(int id)
 ### 实例化
 
 ```c#
-ComputeCalculator calculator;
+ComputeShaderInstance calculator;
 
-calculator = new(ComputePath, SurfaceReso, CellIndexList);
+computeShaderInstance = new(path,
+        [
+            (typeof(type),Data1),
+            (typeof(type),DataList),
+            ...)
+        ]);
 
 ```
 
 ### 做什么的
 
 ```c#
-float[] LocalTList = calculator.ComputeShaderCal();
+
 
 ```
