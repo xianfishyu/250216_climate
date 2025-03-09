@@ -96,8 +96,6 @@ public class ComputeShaderInstance
         Rid buffer = Buffers[bufferIndex];
         byte[] bytes = SerializeData(data);
 
-        // 确保GPU操作完成
-        RD.Sync();
 
         RD.BufferUpdate(
             buffer: buffer,
@@ -105,6 +103,9 @@ public class ComputeShaderInstance
             sizeBytes: (uint)bytes.Length,
             data: bytes
         );
+
+        RD.Submit();
+        RD.Sync();
     }
 
     // 通用数据序列化方法

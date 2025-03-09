@@ -38,7 +38,7 @@ public partial class SphereGroup : Node3D
 	[Export] private float HotThreshold = 100;
 	[Export] private float ZeroThreshold = 0;
 	[Export] private float ColdThreshold = -100;
-	public static ColorMpping colorMpping;
+	public static ColorMpping colorMapping;
 
 	//模拟需要的变量
 	private Dictionary<string, Chunk> Chunks = [];
@@ -51,7 +51,7 @@ public partial class SphereGroup : Node3D
 		ChunkReady();
 		TextureReady();
 		calculator = new(ComputePath, SurfaceReso, CellIndexList);
-		colorMpping = new(HotThreshold, ZeroThreshold, ColdThreshold, HotColor, ColdColor);
+		colorMapping = new(HotThreshold, ZeroThreshold, ColdThreshold, HotColor, ColdColor);
 		PlanesReady();
 		Calculate();
 		TextureUpdate();
@@ -59,6 +59,24 @@ public partial class SphereGroup : Node3D
 		Timer.Timeout += Calculate;
 		Timer.Timeout += TextureUpdate;
 	}
+
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+		{
+			if (keyEvent.Keycode == Key.R)
+			{
+				ChunkReady();
+				TextureReady();
+				calculator = new(ComputePath, SurfaceReso, CellIndexList);
+				colorMapping = new(HotThreshold, ZeroThreshold, ColdThreshold, HotColor, ColdColor);
+				PlanesReady();
+				Calculate();
+				TextureUpdate();
+			}
+		}
+	}
+
 
 	private void PlanesReady()
 	{
@@ -127,6 +145,8 @@ public partial class SphereGroup : Node3D
 
 	private void TextureReady()
 	{
+		PlanesTexture = [];
+
 		PlanesTexture.Add("Up", (ShaderMaterial)Planes["Up"].MaterialOverride);
 		PlanesTexture.Add("Down", (ShaderMaterial)Planes["Down"].MaterialOverride);
 		PlanesTexture.Add("Left", (ShaderMaterial)Planes["Left"].MaterialOverride);
@@ -138,6 +158,7 @@ public partial class SphereGroup : Node3D
 
 	private void TextureUpdate()
 	{
+		colorMapping = new(HotThreshold, ZeroThreshold, ColdThreshold, HotColor, ColdColor);
 		foreach (var chunk in Chunks.Values)
 			chunk.TextureResolution = TextureReso;
 
@@ -360,7 +381,7 @@ public partial class Chunk : GodotObject
 
 				float newT = sigmaT / scaleFactor / scaleFactor;
 
-				textureImage.SetPixel(x, y, SphereGroup.colorMpping.GetHeatColor_H_OutOfRange(newT));
+				textureImage.SetPixel(x, y, SphereGroup.colorMapping.GetHeatColor_H(newT));
 			}
 
 		return ImageTexture.CreateFromImage(textureImage);
