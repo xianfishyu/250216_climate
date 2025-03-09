@@ -42,3 +42,7 @@
 - [ ] 正确的输入输出
 - [ ] 参数化
 - [ ] rk4精度优化(不我认为这没啥用)
+
+## 我要你做
+
+- [ ] MultiMeshInstance3D的Shader加载（你看[github.com/Calvariaa/250216_climate_test](https://github.com/Calvariaa/250216_climate_test)）
