@@ -33,17 +33,14 @@ namespace TEST
         private Dictionary<(uint set, int binding), Rid> Buffers = [];
         private Dictionary<uint, Rid> UniformSet = [];
 
+        private byte[] PushConstant = [];
+
         /// <summary>
         /// 构造函数,用于生成实例
         /// </summary>
         /// <param name="path">计算着色器的路径</param>
         /// <returns></returns>
-        public ComputeShaderInstance(string path)
-        {
-            // Print("ComputeShaderInstance/ctor/inputs:卧槽为啥这个你还能输进来个空值你是人类吗");
-
-            InitializeShader(path);
-        }
+        public ComputeShaderInstance(string path) => InitializeShader(path);
 
         /// <summary>
         /// 初始化计算着色器
@@ -77,11 +74,52 @@ namespace TEST
             Buffers.Add((set, binding), RD.StorageBufferCreate((uint)bytes.Length, bytes));
         }
 
+        /// <summary>
+        /// 你可以通过这个函数来输入推式常量
+        /// 我还是没有测试过,嘻嘻
+        /// 实际上我也不知道最大可以输入多少,但我觉得应该是128byte
+        /// </summary>
+        /// <param name="objects">输入的数据</param>
+        /// <typeparam name="T">匹配: unmanaged</typeparam>
+        public void SetPushConstant<T>(params T[] objects) where T : unmanaged
+        {
+            byte[] bytes = ConvertToByteArray(objects);
+            if (bytes.Length >= 16 && bytes.Length <= 128)
+            {
+                PushConstant = bytes;
+            }
+            else if (bytes.Length > 0 && bytes.Length < 16)
+            {
+                byte[] completion = new byte[16];
+                for (var i = 0; i < completion.Length; i++)
+                {
+                    if (i < bytes.Length)
+                        completion[i] = bytes[i];
+                    else
+                        completion[i] = 0;
+                }
+                PushConstant = completion;
+            }
+            else
+                Print($"ComputeShaderInstance/SetPushConstant:那你输进来的东西超过推式常量的限制,到底输入的是个啥呢: {objects} 还有转换后的东西: {bytes}");
+        }
+
+        /// <summary>
+        /// 清空你输入的推式常量
+        /// </summary>
+        public void ClearPushConstant()
+        {
+            PushConstant = [];
+        }
+
         public void SetUniform()
         {
 
         }
 
+        /// <summary>
+        /// 当输入完所有输入数据后调用这个写入GPU
+        /// </summary>
         public void InitializeComplete()
         {
             Dictionary<uint, Dictionary<int, RDUniform>> uniforms = [];
@@ -129,15 +167,18 @@ namespace TEST
             foreach (var item in UniformSet)
                 RD.ComputeListBindUniformSet(computeList, item.Value, item.Key);
 
+            if (PushConstant.Length > 0)
+                RD.ComputeListSetPushConstant(computeList, PushConstant, (uint)PushConstant.Length);
+
             RD.ComputeListDispatch(computeList, GroupSizeX, GroupSizeY, GroupSizeZ);
             RD.ComputeListEnd();
             RD.Submit();
             RD.Sync();
         }
 
-        public float[] GetFloatArrayResult(uint set,int binding)
+        public float[] GetFloatArrayResult(uint set, int binding)
         {
-            var outputBytes = RD.BufferGetData(Buffers[(set,binding)]);
+            var outputBytes = RD.BufferGetData(Buffers[(set, binding)]);
             float[] result = new float[outputBytes.Length / sizeof(float)];
             Buffer.BlockCopy(outputBytes, 0, result, 0, outputBytes.Length);
             return result;

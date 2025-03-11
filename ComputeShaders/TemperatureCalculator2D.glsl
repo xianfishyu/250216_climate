@@ -15,12 +15,12 @@ layout(set=0,binding=1,std430)buffer NeighborIndex{
 }neighbor_index;
 
 // layout(push_constant,std430)uniform Param{
-//     uint size_x;
-//     uint size_y;
-//     uint size_z;
+//     float size;
 // }param;
 
-// struct{}
+// struct CellInfo{
+
+// }
 
 void main()
 {
