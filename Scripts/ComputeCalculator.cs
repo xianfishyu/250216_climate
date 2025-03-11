@@ -21,7 +21,8 @@ public class ComputeCalculator
 
     private float[] LocalTList;
 
-    private ComputeShaderInstance computeShaderInstance;
+    // private ComputeShaderInstance computeShaderInstance;
+    private TEST.ComputeShaderInstance computeShaderInstance;
 
     // public ComputeCalculator(string path, int resolution, Array<CellIndex> cellIndexList)
     // {
@@ -129,11 +130,16 @@ public class ComputeCalculator
         for (var i = 0; i < cellIndexList.Count; i++)
             LocalTList[i] = cellIndexList[i].temperature;
 
-        computeShaderInstance = new(path,
-        [
-            (typeof(float[]),LocalTList),
-            (typeof(Vector4I[]),cellIndexList.Select(ci => ci.index).ToArray())
-        ]);
+        // computeShaderInstance = new(path,
+        // [
+        //     (typeof(float[]),LocalTList),
+        //     (typeof(Vector4I[]),cellIndexList.Select(ci => ci.index).ToArray())
+        // ]);
+
+        computeShaderInstance = new(path);
+        computeShaderInstance.SetBuffer(LocalTList,0,0);
+        computeShaderInstance.SetBuffer(cellIndexList.Select(ci => ci.index).ToArray(),0,1);
+        computeShaderInstance.InitializeComplete();
 
     }
 
@@ -141,7 +147,9 @@ public class ComputeCalculator
     {
         computeShaderInstance.Calculate(GroupSize,GroupSize,6);
 
-        return computeShaderInstance.GetFloatArrayResult(0);
+        // return computeShaderInstance.GetFloatArrayResult(0);
+
+        return computeShaderInstance.GetFloatArrayResult(0,0);
     }
 
 }

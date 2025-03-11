@@ -14,7 +14,13 @@ layout(set=0,binding=1,std430)buffer NeighborIndex{
     uvec4 data[];
 }neighbor_index;
 
+// layout(push_constant,std430)uniform Param{
+//     uint size_x;
+//     uint size_y;
+//     uint size_z;
+// }param;
 
+// struct{}
 
 void main()
 {
@@ -26,6 +32,8 @@ void main()
     gl_GlobalInvocationID.y*(gl_NumWorkGroups.x*gl_WorkGroupSize.x)+
     gl_GlobalInvocationID.z*(gl_NumWorkGroups.x*gl_WorkGroupSize.x)*
     (gl_NumWorkGroups.y*gl_WorkGroupSize.y);
+    
+    if(id>local_temp.data.length()){return;}
     
     float deltaT=0.;
     

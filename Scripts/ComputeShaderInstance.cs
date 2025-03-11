@@ -64,6 +64,7 @@ public class ComputeShaderInstance
             {
                 UniformType = RenderingDevice.UniformType.StorageBuffer,
                 Binding = i,
+                
             });
             uniforms[i].AddId(Buffers[i]);
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://uyewp03xo681"]
+[gd_scene load_steps=29 format=3 uid="uid://uyewp03xo681"]
 
 [ext_resource type="Texture2D" uid="uid://8ju4dbsqyy6a" path="res://2k_earth_daymap.jpg" id="1_qr65g"]
 [ext_resource type="Script" uid="uid://inb084b05cl" path="res://Scripts/SphereCamera3D.cs" id="2_pc1j1"]
@@ -203,18 +203,6 @@ subdivide_depth = 10
 center_offset = Vector3(-100, 0, 0)
 orientation = 0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6dlgo"]
-albedo_color = Color(1, 0, 0, 1)
-
-[sub_resource type="SphereMesh" id="SphereMesh_lpjr5"]
-material = SubResource("StandardMaterial3D_6dlgo")
-
-[sub_resource type="MultiMesh" id="MultiMesh_gcfrn"]
-transform_format = 1
-instance_count = 1
-mesh = SubResource("SphereMesh_lpjr5")
-buffer = PackedFloat32Array(0, 0.7, 9.5, 135.25, 0, 0, 0, 0.7, 165.598, 1.5, 0.1155, 0.132)
-
 [node name="Node3D" type="Node3D"]
 metadata/_edit_lock_ = true
 
@@ -233,7 +221,6 @@ omni_range = 4096.0
 omni_attenuation = 0.0
 
 [node name="SphereGroup" type="Node3D" parent="." node_paths=PackedStringArray("Planes", "Timer")]
-visible = false
 script = ExtResource("3_kegnc")
 Planes = {
 &"Back": NodePath("Back"),
@@ -294,6 +281,3 @@ metadata/_edit_lock_ = true
 [node name="Timer" type="Timer" parent="SphereGroup"]
 wait_time = 0.1
 autostart = true
-
-[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
-multimesh = SubResource("MultiMesh_gcfrn")
