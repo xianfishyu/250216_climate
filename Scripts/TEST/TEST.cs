@@ -33,6 +33,7 @@ namespace TEST
         private Rid ComputePipeline;
 
         private Dictionary<(uint set, int binding), Rid> Buffers = [];
+        private Dictionary<Rid, RenderingDevice.UniformType> UniformType = [];
         private Dictionary<uint, Rid> UniformSet = [];
 
         private byte[] PushConstant = [];
@@ -72,7 +73,10 @@ namespace TEST
         /// <typeparam name="T"></typeparam>
         public void SetBuffer<T>(T data, uint set, int binding)
         {
-            byte[] bytes = ConvertToByteArray(data);
+            byte[] bytes = Tool.ConvertToByteArray(data);
+            var rid = RD.StorageBufferCreate((uint)bytes.Length, bytes);
+            GD.Print("Output: ", string.Join(", ", rid));
+            UniformType[rid] = RenderingDevice.UniformType.StorageBuffer;
             Buffers.Add((set, binding), RD.StorageBufferCreate((uint)bytes.Length, bytes));
         }
 
@@ -85,7 +89,7 @@ namespace TEST
         /// <typeparam name="T">匹配: unmanaged</typeparam>
         public void SetPushConstant<T>(params T[] objects) where T : unmanaged
         {
-            byte[] bytes = ConvertToByteArray(objects);
+            byte[] bytes = Tool.ConvertToByteArray(objects);
             if (bytes.Length >= 16 && bytes.Length <= 128)
             {
                 PushConstant = bytes;
@@ -120,6 +124,18 @@ namespace TEST
         }
 
         /// <summary>
+        /// 设置纹理 Uniform
+        /// </summary>
+        /// <param name="textureRid">纹理的 RID</param>
+        /// <param name="set">Uniform Set</param>
+        /// <param name="binding">Uniform Binding</param>
+        public void SetTextureUniform(Rid textureRid, uint set, int binding)
+        {
+            UniformType[textureRid] = RenderingDevice.UniformType.Image;
+            Buffers.Add((set, binding), textureRid);
+        }
+
+        /// <summary>
         /// 当输入完所有输入数据后调用这个写入GPU
         /// </summary>
         public void InitializeComplete()
@@ -135,7 +151,7 @@ namespace TEST
 
                 RDUniform rdUniform = new RDUniform
                 {
-                    UniformType = RenderingDevice.UniformType.StorageBuffer,
+                    UniformType = UniformType[buffer.Value],
                     Binding = binding,
                 };
 
@@ -370,5 +386,6 @@ namespace TEST
         }
 
     }
+
 
 }
