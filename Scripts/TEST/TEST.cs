@@ -22,6 +22,8 @@ namespace TEST
     /// 使用 SetBuffer 来输入数据
     /// 使用 InitializeComplete 来告知初始化完成
     /// 使用 Calculate 来进行计算
+    /// 
+    /// TODOLIST:类型化的输出
     /// </summary>
     public class ComputeShaderInstance
     {
