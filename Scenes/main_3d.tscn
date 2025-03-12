@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://dm5rhgod454of"]
+
+[ext_resource type="Script" uid="uid://inb084b05cl" path="res://Scripts/SphereCamera3D.cs" id="1_2l4ix"]
+[ext_resource type="Texture2D" uid="uid://8ju4dbsqyy6a" path="res://2k_earth_daymap.jpg" id="2_8jelc"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_clg0j"]
+albedo_texture = ExtResource("2_8jelc")
+
+[sub_resource type="SphereMesh" id="SphereMesh_2l4ix"]
+radius = 100.0
+height = 200.0
+
+[node name="Main_3D" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 100)
+script = ExtResource("1_2l4ix")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Camera3D"]
+omni_range = 4096.0
+omni_attenuation = 0.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_clg0j")
+mesh = SubResource("SphereMesh_2l4ix")
+skeleton = NodePath("../Camera3D")
