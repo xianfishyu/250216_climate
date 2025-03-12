@@ -23,7 +23,7 @@ namespace TEST
     /// 使用 InitializeComplete 来告知初始化完成
     /// 使用 Calculate 来进行计算
     /// 
-    /// TODOLIST:类型化的输出
+    /// TODOLIST:正确的uniform type设置,类型化的输出,纹理采样
     /// </summary>
     public class ComputeShaderInstance
     {
@@ -113,10 +113,7 @@ namespace TEST
         /// <summary>
         /// 清空你输入的推式常量
         /// </summary>
-        public void ClearPushConstant()
-        {
-            PushConstant = [];
-        }
+        public void ClearPushConstant() => PushConstant = [];
 
         public void SetUniform()
         {
