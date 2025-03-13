@@ -22,13 +22,11 @@ namespace TEST
     /// 使用 SetBuffer 来输入数据
     /// 使用 InitializeComplete 来告知初始化完成
     /// 使用 Calculate 来进行计算
-    /// 
-    /// TODOLIST:正确的uniform type设置,类型化的输出,纹理采样
     /// </summary>
     public class ComputeShaderInstance
     {
 
-        private RenderingDevice RD;
+        public RenderingDevice RD;
         private Rid ComputeShader;
         private Rid ComputePipeline;
 
@@ -90,21 +88,18 @@ namespace TEST
         public void SetPushConstant<T>(params T[] objects) where T : unmanaged
         {
             byte[] bytes = Tool.ConvertToByteArray(objects);
-            if (bytes.Length >= 16 && bytes.Length <= 128)
+            if (bytes.Length > 0 && bytes.Length <= 128)
             {
-                PushConstant = bytes;
-            }
-            else if (bytes.Length > 0 && bytes.Length < 16)
-            {
-                byte[] completion = new byte[16];
-                for (var i = 0; i < completion.Length; i++)
+                var len = bytes.Length / 4 < 4 ? 4 : bytes.Length / 4;
+                byte[] completion = new byte[len];
+                for (var i = 0; i < len; i++)
                 {
                     if (i < bytes.Length)
                         completion[i] = bytes[i];
                     else
                         completion[i] = 0;
                 }
-                PushConstant = completion;
+                PushConstant = PushConstant.Concat(completion).ToArray();
             }
             else
                 Print($"ComputeShaderInstance/SetPushConstant:那你输进来的东西超过推式常量的限制,到底输入的是个啥呢: {objects} 还有转换后的东西: {bytes}");
@@ -113,7 +108,10 @@ namespace TEST
         /// <summary>
         /// 清空你输入的推式常量
         /// </summary>
-        public void ClearPushConstant() => PushConstant = [];
+        public void ClearPushConstant()
+        {
+            PushConstant = [];
+        }
 
         public void SetUniform()
         {
@@ -129,7 +127,8 @@ namespace TEST
         public void SetTextureUniform(Rid textureRid, uint set, int binding)
         {
             UniformType[textureRid] = RenderingDevice.UniformType.Image;
-            Buffers.Add((set, binding), textureRid);
+            // Buffers.Add((set, binding), textureRid);
+            Buffers[(set, binding)] = textureRid;
         }
 
         /// <summary>
@@ -154,6 +153,8 @@ namespace TEST
 
                 uniforms[set][binding] = rdUniform;
                 uniforms[set][binding].AddId(buffer.Value);
+
+                // Print("uniforms: ", string.Join(",", uniforms));
             }
 
             foreach (var kvp in uniforms)
@@ -165,7 +166,9 @@ namespace TEST
                 );
 
                 UniformSet[setKey] = RD.UniformSetCreate(uniformArray, ComputeShader, setKey);
+                // Print(UniformSet[setKey]);
             }
+
         }
 
         /// <summary>
@@ -183,7 +186,22 @@ namespace TEST
                 RD.ComputeListBindUniformSet(computeList, item.Value, item.Key);
 
             if (PushConstant.Length > 0)
-                RD.ComputeListSetPushConstant(computeList, PushConstant, (uint)PushConstant.Length);
+            {
+                if (PushConstant.Length > 0 && PushConstant.Length <= 128)
+                {
+                    byte[] completion = new byte[16];
+                    for (var i = 0; i < 16; i++)
+                    {
+                        if (i < PushConstant.Length)
+                            completion[i] = PushConstant[i];
+                        else
+                            completion[i] = 0;
+                    }
+                    PushConstant = completion;
+                }
+
+                RD.ComputeListSetPushConstant(computeList, PushConstant, 16);
+            }
 
             RD.ComputeListDispatch(computeList, GroupSizeX, GroupSizeY, GroupSizeZ);
             RD.ComputeListEnd();
@@ -198,6 +216,16 @@ namespace TEST
             Buffer.BlockCopy(outputBytes, 0, result, 0, outputBytes.Length);
             return result;
         }
+
+        public Rid GetBufferRid(uint set, int binding)
+        {
+            return Buffers[(set, binding)];
+        }
+
+        // public Rid GetBufferRid(uint set, int binding)
+        // {
+        // 	return UniformSet[(set, binding)];
+        // }
 
     }
 
@@ -383,6 +411,5 @@ namespace TEST
         }
 
     }
-
 
 }
