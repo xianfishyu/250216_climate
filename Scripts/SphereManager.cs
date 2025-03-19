@@ -35,8 +35,9 @@ public partial class SphereManager : MeshInstance3D
 
 
 
-    private void 你需要写一个球谐函数()
+    private void 你需要写一个能生成球的函数()
     {
-
+        // 生成球
+        // 生成经纬度
     }
 }
