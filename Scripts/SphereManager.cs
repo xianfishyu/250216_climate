@@ -54,21 +54,21 @@ public partial class SphereManager : MeshInstance3D
         {
             for (var j = 0; j < resol; j++)
             {
-                sphere[i, j].UVPos = new Vector2(i / (resol - 1), j / (resol - 1));
+                sphere[i, j].UVPos = new Vector2((float)i / (resol - 1), (float)j / (resol - 1));
 
                 sphere[i, j].CubePos = new Vector3(radius, j - radius, -(i - radius));
                 sphere[i, j].CalculateRadian();
             }
         }
-        
+
         //-X
         for (var i = resol; i < resol * 2; i++)
         {
             for (var j = 0; j < resol; j++)
             {
-                sphere[i, j].UVPos = new Vector2(i / (resol - 1), j / (resol - 1));
+                sphere[i, j].UVPos = new Vector2((float)i / (resol - 1), (float)j / (resol - 1));
 
-                sphere[i, j].CubePos = new Vector3(radius, j - radius, i - radius);
+                sphere[i, j].CubePos = new Vector3(-radius, j - radius, i - radius);
                 sphere[i, j].CalculateRadian();
             }
         }
@@ -78,7 +78,7 @@ public partial class SphereManager : MeshInstance3D
         {
             for (var j = 0; j < resol; j++)
             {
-                sphere[i, j].UVPos = new Vector2(i / (resol - 1), j / (resol - 1));
+                sphere[i, j].UVPos = new Vector2((float)i / (resol - 1), (float)j / (resol - 1));
 
                 sphere[i, j].CubePos = new Vector3(i - radius, radius, -(j - radius));
                 sphere[i, j].CalculateRadian();
@@ -90,9 +90,9 @@ public partial class SphereManager : MeshInstance3D
         {
             for (var j = 0; j < resol; j++)
             {
-                sphere[i, j].UVPos = new Vector2(i / (resol - 1), j / (resol - 1));
+                sphere[i, j].UVPos = new Vector2((float)i / (resol - 1), (float)j / (resol - 1));
 
-                sphere[i, j].CubePos = new Vector3(i - radius, radius, j - radius);
+                sphere[i, j].CubePos = new Vector3(i - radius, -radius, j - radius);
                 sphere[i, j].CalculateRadian();
             }
         }
@@ -102,7 +102,7 @@ public partial class SphereManager : MeshInstance3D
         {
             for (var j = 0; j < resol; j++)
             {
-                sphere[i, j].UVPos = new Vector2(i / (resol - 1), j / (resol - 1));
+                sphere[i, j].UVPos = new Vector2((float)i / (resol - 1), (float)j / (resol - 1));
 
                 sphere[i, j].CubePos = new Vector3(i - radius, j - radius, radius);
                 sphere[i, j].CalculateRadian();
@@ -114,9 +114,9 @@ public partial class SphereManager : MeshInstance3D
         {
             for (var j = 0; j < resol; j++)
             {
-                sphere[i, j].UVPos = new Vector2(i / (resol - 1), j / (resol - 1));
+                sphere[i, j].UVPos = new Vector2((float)i / (resol - 1), (float)j / (resol - 1));
 
-                sphere[i, j].CubePos = new Vector3(-(i - radius), j - radius, radius);
+                sphere[i, j].CubePos = new Vector3(-(i - radius), j - radius, -radius);
                 sphere[i, j].CalculateRadian();
             }
         }
