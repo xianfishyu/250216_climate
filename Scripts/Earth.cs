@@ -16,7 +16,6 @@ public class Earth
 	// int 转轴倾角;
 	// int 轨道倾角;
 
-	// private float 半径 = 100;
 	// int 表面积;
 	// float 重力加速度;
 
@@ -25,10 +24,10 @@ public class Earth
 
 
 	//米?
-	float 半径 = 40000 * 1E3f;
+	// float 半径 = 40000 * 1E3f;
 	//米/平方秒?
-	float 重力;
+	// float 重力;
 	//弧度/地球秒?
-	float 角速度;
+	// float 角速度;
 
 }
